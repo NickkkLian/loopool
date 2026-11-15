@@ -45,7 +45,7 @@ email buttons      ──► /pool-act   (check in, vote on a foul, confirm a re
 "Ask the referee"  ──► /pool-ask   (AI agent with the house rules and the live board)
 ```
 
-The whole backend is one workflow (`pool-referee.n8n.json`, 46 nodes) that also serves the app. The camera page detects shots in the browser (frame differencing with fixed start and end levels, chosen by replaying labelled pool videos through it), so n8n only receives the shots that matter. The AI only describes what it sees; the score and every rule are plain code, so the same shot always gets the same ruling. State is kept in the workflow's static data, which n8n saves when a run ends, so anything slow runs apart from the state: the 15-second AI call hands its result to a short `/pool-apply` run, and emails go out from a background sub-run.
+The whole backend is one workflow (`pool-referee.n8n.json`, 56 nodes) that also serves the app. The camera page detects shots in the browser (frame differencing with fixed start and end levels, chosen by replaying labelled pool videos through it), so n8n only receives the shots that matter. The AI only describes what it sees; the score and every rule are plain code, so the same shot always gets the same ruling. State is kept in the workflow's static data, which n8n saves when a run ends, so anything slow runs apart from the state: the 15-second AI call hands its result to a short `/pool-apply` run, and emails go out from a background sub-run.
 
 ## How we chose the AI model
 
