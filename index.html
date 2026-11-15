@@ -459,14 +459,8 @@ body.tvfull .tv { border: 0; border-radius: 0; }
   <div class="controls">
     <div class="wrap">
       <span class="label">Demo</span>
-      <span class="clock num" id="clock">--:--</span>
       <button class="b go" data-act="quick">Quick start</button>
-      <button class="b" data-act="skip1">Skip 1 min</button>
-      <button class="b" data-act="skipturn">Skip to my turn</button>
-      <button class="b" data-act="shot">Send next shot</button>
-      <button class="b" data-act="auto" id="autoBtn">Auto-play shots</button>
       <button class="b" data-act="reset">Reset</button>
-      <button class="evchip" data-act="showev" id="evChip">No camera events yet</button>
     </div>
   </div>
 </header>
@@ -2369,13 +2363,9 @@ function renderMode() {
   b.textContent = S.mode === 'live' ? (S.err ? 'n8n unreachable' : 'Live from n8n') : 'Demo data';
 }
 function renderControls(st) {
-  const ct = st && cameraTable(st), g = ct && ct.game, me = st && st.me;
-  $('[data-act="shot"]').disabled = !(g && g.status === 'live' && g.shots.length < SCRIPT.length);
-  $('[data-act="skipturn"]').disabled = !(me && me.status === 'waiting');
+  const me = st && st.me;
+  const bar = document.querySelector('.controls'); if (bar) bar.style.display = S.mode === 'live' ? 'none' : '';   // demo tools: on demo data only, never on a real venue
   $('[data-act="quick"]').disabled = !!(me && ['waiting', 'called', 'playing'].includes(me.status));
-  const ab = $('#autoBtn'); ab.textContent = S.auto ? 'Pause auto-play' : 'Auto-play shots'; ab.classList.toggle('on', S.auto);
-  if (st) $('#clock').textContent = fmtTime(st.now);
-  if (S.lastEv) $('#evChip').textContent = 'Shot ' + S.lastEv.shotNo + (S.mode === 'live' ? ' sent to n8n' : ' (demo data, nothing sent)') + ': potted [' + S.lastEv.potted.join(', ') + '], first contact ' + S.lastEv.firstContact + (S.lastEv.confidence.firstContact ? ' (' + Math.round(S.lastEv.confidence.firstContact * 100) + '% sure)' : '') + (S.lastEv.cueBallPotted ? ', scratch' : '');
 }
 function render() {
   $$('.views a').forEach(a => { const on = a.dataset.view === S.view; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
@@ -2488,7 +2478,7 @@ document.addEventListener('click', async e => {
   else if (x === 'skipturn') act('skip');
   else if (x === 'shot') sendShot();
   else if (x === 'auto') { S.auto = !S.auto; renderControls(S.state); if (S.auto) sendShot(true); }
-  else if (x === 'reset') { S.auto = false; S.ack = {}; S.lastEv = null; S.ticket = null; S.joinOpen = false; S.sigs.clear(); S.tviews.forEach(v => { v.stop(); v.key = null; }); $('#evChip').textContent = 'No camera events yet'; await act('reset'); toast('Demo reset'); }
+  else if (x === 'reset') { S.auto = false; S.ack = {}; S.lastEv = null; S.ticket = null; S.joinOpen = false; S.sigs.clear(); S.tviews.forEach(v => { v.stop(); v.key = null; }); await act('reset'); toast('Demo reset'); }
   else if (x === 'showev') { const d = $('#evDlg'); if (d.showModal) d.showModal(); }
   else if (x === 'settings') { $('#baseInput').value = S.base || 'http://localhost:5678/webhook'; $('#testRes').textContent = ''; const d = $('#settings'); if (d.showModal) d.showModal(); }
   else if (x === 'use-demo') { S.mode = 'demo'; S.err = null; S.ticket = null; store.set('mode', 'demo'); $('#settings').close(); S.sigs.clear(); await act('state'); toast('Using demo data in this browser'); }
