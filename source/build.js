@@ -5,8 +5,10 @@ const OUT = process.argv[2] || path.join(__dirname, '..');
 const SCR = __dirname;
 const ENGINE = SRC('engine.js'), SCRIPT = SRC('script.js'), APP = SRC('app.js');
 const CAMERA = fs.existsSync(path.join(__dirname, 'src', 'camera.js')) ? SRC('camera.js') : '';   // the table-camera page (#camera)
+const BUSINESS = fs.existsSync(path.join(__dirname, 'src', 'business.js')) ? SRC('business.js') : '';   // the bar app (#bar)
+const PLAYER = fs.existsSync(path.join(__dirname, 'src', 'player.js')) ? SRC('player.js') : '';       // the start screen and the player app (#play)
 const HEAD = SRC('head.html');
-const BODY = SRC('body.html').replace('/*__ENGINE__*/', () => ENGINE).replace('/*__SCRIPT__*/', () => SCRIPT).replace('/*__APP__*/', () => CAMERA + '\n' + APP);
+const BODY = SRC('body.html').replace('/*__ENGINE__*/', () => ENGINE).replace('/*__SCRIPT__*/', () => SCRIPT).replace('/*__APP__*/', () => CAMERA + '\n' + BUSINESS + '\n' + PLAYER + '\n' + APP);
 const FULL = '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>\n' + HEAD + '\n</head>\n<body>\n' + BODY + '\n</body>\n</html>\n';
 const FRAGMENT = HEAD + '\n' + BODY + '\n';
 fs.mkdirSync(OUT, { recursive: true });
@@ -120,7 +122,22 @@ link(frameHook, frameLoad); link(frameLoad, frameSend);
 const appHook = node('Pool app page', 'n8n-nodes-base.webhook', 2.1, [-480, 1180], { path: 'pool-app', responseMode: 'responseNode', options: {} }, { webhookId: uid() });
 const sendPage = node('Send the app page', 'n8n-nodes-base.respondToWebhook', 1.1, [-240, 1180], { respondWith: 'text', responseBody: FULL, options: { responseHeaders: { entries: [{ name: 'Content-Type', value: 'text/html; charset=utf-8' }, { name: 'Cache-Control', value: 'no-store' }] } } });
 link(appHook, sendPage);
-sticky(`### App page\nOpening \`/webhook/pool-app\` returns the whole app: player phone (\`#phone\`), bar TV (\`#tv\`), counter tablet (\`#venue\`). The page and the API share one address, so phones need no setup: scan the QR code on the TV, join, play.`, [-560, 1340], 560, 220, 7);
+sticky(`### App page\nOpening \`/webhook/pool-app\` returns the whole app: the player app (\`#play\`, the QR code opens \`#mobile\`), the bar app (\`#bar\`) and the bar TV (\`#tv\`). The page and the API share one address, so phones need no setup: scan the QR code on the TV, join, play.`, [-560, 1340], 560, 220, 7);
+
+// 7. Profile auto-fill: the bar pastes its website or Google Maps link on the setup page and gets a filled-in profile
+sticky(`### Bar profile auto-fill\nThe setup page calls \`/webhook/pool-lookup?url=...\` with the bar's website or Google Maps link. n8n opens the page, takes what the page states in its own data (schema.org: name, address, phone, opening hours; the Maps place name), and **AI reads the bar's page** for the rest (number of tables, table brand and size, house cues, a short "about"). The bar checks everything before saving.\nFor the most reliable Google data, swap **Open the page** for the Google Places API (needs an API key).`, [-560, 2440], 900, 170, 5);
+const lookHook = node('Bar link to read', 'n8n-nodes-base.webhook', 2.1, [-480, 2660], { path: 'pool-lookup', responseMode: 'responseNode', options: { allowedOrigins: '*' } }, { webhookId: uid() });
+const lookRead = node('Read the link', 'n8n-nodes-base.code', 2, [-240, 2660], { jsCode: codeOf(PARTS.readLookup) });
+const lookFetch = node('Open the page', 'n8n-nodes-base.httpRequest', 4.2, [0, 2660], { url: '={{ $json.url || "https://example.invalid" }}', sendHeaders: true, headerParameters: { parameters: [{ name: 'User-Agent', value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36' }, { name: 'Accept-Language', value: 'en-CA,en;q=0.9' }] }, options: { timeout: 15000, response: { response: { fullResponse: true, neverError: true, responseFormat: 'text' } } } }, { onError: 'continueRegularOutput' });
+const lookFacts = node('Page facts', 'n8n-nodes-base.code', 2, [240, 2660], { jsCode: codeOf(PARTS.pageFacts) });
+const lookIf = ifNode('Anything to read?', [480, 2660], '={{ $json.read }}', { type: 'boolean', operation: 'true', singleValue: true });
+const lookAgent = node("AI reads the bar's page", '@n8n/n8n-nodes-langchain.agent', 3.1, [720, 2560], { promptType: 'define', text: '={{ $json.prompt }}', options: { systemMessage: 'You extract facts about a bar or pool hall from its web page for a profile form. Reply with one JSON object only, no markdown. Use null for anything the page does not clearly state. Never guess numbers.', maxIterations: 1 } }, { onError: 'continueRegularOutput' });
+const lookModel = node('Claude (profile reader)', '@n8n/n8n-nodes-langchain.lmChatAnthropic', 1.6, [720, 2780], { model: { __rl: true, mode: 'id', value: 'claude-haiku-5-5' }, options: { maxTokensToSample: 900, thinkingMode: 'disabled' } });
+const lookMerge = node('Build the profile', 'n8n-nodes-base.code', 2, [960, 2660], { jsCode: codeOf(PARTS.profileFromPage) });
+const lookReply = node('Reply with the profile', 'n8n-nodes-base.respondToWebhook', 1.1, [1200, 2660], { respondWith: 'json', responseBody: '={{ JSON.stringify($json) }}', options: {} });
+link(lookHook, lookRead); link(lookRead, lookFetch); link(lookFetch, lookFacts); link(lookFacts, lookIf);
+link(lookIf, lookAgent, 0); link(lookIf, lookMerge, 1); link(lookAgent, lookMerge); link(lookMerge, lookReply);
+connections[lookModel] = { ai_languageModel: [[{ node: lookAgent, type: 'ai_languageModel', index: 0 }]] };
 
 const wf = { name: 'Loopool', nodes, connections, pinData: {}, settings: { executionOrder: 'v1' }, active: false, meta: { templateCredsSetupCompleted: true }, tags: [] };
 fs.writeFileSync(path.join(OUT, 'pool-referee.n8n.json'), JSON.stringify(wf, null, 2));

@@ -446,6 +446,7 @@
       renderNow,
       refresh: renderConn,
       running: () => running,
+      stop: () => stopAll(),
       show(on) { unit.hidden = !on; if (on) requestAnimationFrame(() => draw()); },
       destroy() { destroyed = true; stopAll(); window.removeEventListener('resize', onResize); unit.remove(); },
     };
@@ -462,7 +463,7 @@
     el.innerHTML = `
 <div class="cam-view">
   <div class="cam-top"><h2 class="cam-sign">Table camera</h2>
-    <div class="cam-brand"><a href="#presenter">All screens</a><span>${SHIELD}LOOPOOL</span></div></div>
+    <div class="cam-brand">${opts.back ? `<a href="${esc(opts.back.href)}">${esc(opts.back.label)}</a>` : ''}<span>${SHIELD}LOOPOOL</span></div></div>
   <div class="cam-tabs" role="tablist" aria-label="Tables on this camera page">
     <span data-r="tabs" style="display:contents"></span>
     <div class="cam-add" data-r="addRow"><select data-r="addSel" aria-label="Table to add"></select><button class="cam-b" data-r="addBtn" title="Watch another table from this device, for example with a second webcam">Add table</button></div>
@@ -560,6 +561,8 @@
 
     return {
       addTable: id => addTable(id, true),
+      running: () => [...units.values()].filter(u => u.running()).map(u => u.id),   // tables whose camera is on (bar app)
+      stopAll() { units.forEach(u => { if (u.running()) u.stop(); }); },              // the bar ended the session
       destroy() { destroyed = true; clearInterval(pollTimer); units.forEach(u => u.destroy()); units.clear(); el.innerHTML = ''; },
     };
   }

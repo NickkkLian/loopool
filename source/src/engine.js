@@ -26,7 +26,9 @@ function seedState(now) {
   const seat = (pid, name) => ({ pid, name, ticket: null, real: false, present: true });
   return {
     v: 1, skew: 0, seq: 101, createdAt: now, flags: {},
-    venue: { name: 'Loopool', note: 'Demo venue · fake players' },
+    venue: venueProfile({ name: 'Loopool', note: 'Demo venue · fake players', address: '6133 University Blvd, Vancouver', tableBrand: 'Diamond', tableSize: '8 ft', cues: 12, about: 'Four tables, a camera referee on Table 1 and a fair queue for everyone.', setup: true, lat: 49.2661, lng: -123.2497 }, 4),
+    events: seedEvents(now),
+    directory: seedDirectory(now),
     players: {
       p_sam: P('Sam', 1340, 18, 9), p_lee: P('Lee', 1255, 11, 10), p_ana: P('Ana', 1410, 24, 8), p_kai: P('Kai', 1175, 6, 9),
       p_noor: P('Noor', 1305, 15, 11), p_jules: P('Jules', 1230, 9, 9), p_kim: P('Kim', 1265, 12, 10), p_ravi: P('Ravi', 1190, 7, 9),
@@ -204,6 +206,7 @@ function settle(S, now, notes) {
           }
         }
         if (!t.champ && t.challenger) { t.champ = t.challenger; t.challenger = null; t.streak = 0; changed = true; }
+        const called = [];
         for (const side of ['champ', 'challenger']) {
           if (t[side]) continue;
           const q = S.queue.find(x => eligible(x, t));
@@ -211,9 +214,13 @@ function settle(S, now, notes) {
           q.status = 'called'; q.table = t.id; q.calledAt = now; q.seat = side;
           t[side] = seatFromTicket(q, now);
           log(S, now, 'queue', q.name + ' was called to ' + t.name);
-          text(S, now, q.ticket, 'It\'s your turn! Go to ' + t.name + ' and check in within ' + Math.round(RULES.checkinSec / 60) + ' minutes, or the next name on the board is called.', notes, { subject: 'Your table is ready: ' + t.name, buttons: [['I\'m at the table', 'checkin']] });
+          called.push([q, side]);
           changed = true;
         }
+        called.splice(0).forEach(([q, side]) => {   // after both seats are filled, so the email can name the opponent
+          const opp = t[side === 'champ' ? 'challenger' : 'champ'];
+          text(S, now, q.ticket, 'It\'s your turn! Go to ' + t.name + (opp ? ' to play ' + opp.name : '') + '. Check in within ' + Math.round(RULES.checkinSec / 60) + ' minutes, or your spot goes to the next name on the board.', notes, { subject: 'Your table is ready: ' + t.name + (opp ? ' vs ' + opp.name : ''), buttons: [['I\'m at the table', 'checkin']] });
+        });
         if (t.champ && t.challenger && t.champ.present && t.challenger.present) { startGame(S, t, now); changed = true; }
       }
     }
@@ -327,7 +334,7 @@ function etas(S, now) {
   return out;
 }
 
-function publicState(S, now, ticket) {
+function publicState(S, now, ticket, player) {
   const E = etas(S, now);
   const rating = pid => (S.players[pid] || {}).rating || RULES.startRating;
   const seatPub = (s, t, side) => s ? { name: s.name, rating: rating(s.pid), present: !!s.present, real: !!s.real, ticket: s.ticket ? s.ticket : null, checkinLeft: !s.present && s.calledAt ? Math.max(0, Math.round(((s.real ? RULES.checkinSec : RULES.simCheckinSec) * 1000 - (now - s.calledAt)) / 1000)) : null, streak: side === 'champ' ? t.streak : 0 } : null;
@@ -337,7 +344,7 @@ function publicState(S, now, ticket) {
     if (g) status = g.status === 'review' ? (g.review && g.review.staff ? 'staff' : 'review') : g.status === 'confirm' ? 'confirm' : 'playing';
     else if (t.champ && t.challenger) status = 'checkin';
     else if (t.champ) status = 'waiting';
-    const pub = { id: t.id, name: t.name, ref: t.ref, camera: refereed(t, now), gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
+    const pub = { id: t.id, name: t.name, ref: t.ref, camera: refereed(t, now), camLive: camOn(t, now), gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
     if (g) {
       pub.game = { id: g.id, mode: g.mode, rated: g.rated, startedAt: g.startedAt, minutes: Math.max(0, Math.round((now - g.startedAt) / MIN)), left: g.mode === 'sim' ? Math.max(1, Math.round((g.endsAt - now) / MIN)) : null, status: g.status };
       if (g.mode === 'camera') Object.assign(pub.game, { gameType: g.gameType || t.gameType, lastReason: g.lastReason || '', turn: g.turn, groups: g.groups, onTable: g.onTable, positions: g.positions, lastShot: g.lastShot, shots: g.shots.slice(-14), review: g.review, ballInHand: g.ballInHand, winner: g.winner, winReason: g.winReason || '', confirm: g.confirm });
@@ -353,8 +360,12 @@ function publicState(S, now, ticket) {
   const sharp = top(r => r.avgShot, r => r.shots >= 5); if (sharp) sharp.badges.push('sharpshooter');
   const fair = top(r => -r.fouls / r.shots, r => r.shots >= 5); if (fair) fair.badges.push('fair_play');
   const bestShot = top(r => r.best, r => r.shots >= 1); if (bestShot && bestShot.best >= 85) bestShot.badges.push('best_shot');
-  leaderboard.sort((a, b) => b.rating - a.rating); leaderboard.length = Math.min(leaderboard.length, 10);
-  const out = { ok: true, now, venue: S.venue, rules: { maxWins: RULES.maxWins, checkinSec: RULES.checkinSec }, tables, queue, leaderboard, recent: S.history.slice(0, 6), feed: S.feed.slice(-14).reverse() };
+  leaderboard.sort((a, b) => b.rating - a.rating);
+  const pname = String(player || '').trim().toLowerCase(), mi = pname ? leaderboard.findIndex(r => r.name.toLowerCase() === pname) : -1;
+  const my = mi < 0 ? null : Object.assign({}, leaderboard[mi], { rank: mi + 1, of: leaderboard.length,
+    games: S.history.filter(h => h.winner.toLowerCase() === pname || h.loser.toLowerCase() === pname).slice(0, 8).map(h => ({ at: h.at, table: h.table, won: h.winner.toLowerCase() === pname, opponent: h.winner.toLowerCase() === pname ? h.loser : h.winner, rated: h.rated, delta: h.delta })) });
+  leaderboard.length = Math.min(leaderboard.length, 10);
+  const out = { ok: true, now, venue: S.venue, rules: { maxWins: RULES.maxWins, checkinSec: RULES.checkinSec }, tables, queue, leaderboard, recent: S.history.slice(0, 6), feed: S.feed.slice(-14).reverse(), events: publicEvents(S, now), directory: S.directory || [], my };
   const q = ticket ? findTicket(S, ticket) : null;
   if (q) {
     const t = tableOf(S, q), side = sideOf(t, q);
@@ -399,13 +410,133 @@ function doUndo(S, t, now) {
 function sideByName(t, name) { const n = String(name || '').trim().toLowerCase(); return ['champ', 'challenger'].find(sd => t[sd] && t[sd].name.toLowerCase() === n) || null; }
 const STAFF_ACTIONS = ['start_match', 'switch_turn', 'foul', 'set_group', 'end_match', 'next_match', 'undo', 'reset_table'];
 
+// ---- Bar profile and events (the "Bar setup" screen) ----
+// The profile lives in S.venue, so the bar's name shows on every screen and in the emails. Older saved states
+// (before profiles existed) get the defaults the first time they are read, and nothing else about them changes.
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const EVENT_KINDS = ['tournament', 'league', 'social', 'lesson'];
+const str = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
+const hhmm = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || '')) ? String(v) : '';
+const isoDay = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '';
+function venueProfile(v, tableCount) {
+  v = v || {};
+  const hours = {};
+  DAYS.forEach(d => { const h = (v.hours || {})[d] || {}; hours[d] = { open: hhmm(h.open) || '16:00', close: hhmm(h.close) || (d === 'fri' || d === 'sat' ? '02:00' : '00:00'), closed: !!h.closed }; });
+  const n = Math.round(Number(v.tableCount));
+  return Object.assign({}, v, {
+    name: str(v.name, 40) || 'Loopool', note: str(v.note, 80),
+    address: str(v.address, 120), mapsUrl: /^https:\/\//.test(String(v.mapsUrl || '')) ? str(v.mapsUrl, 300) : '',
+    phone: str(v.phone, 30), website: /^https:\/\//.test(String(v.website || '')) ? str(v.website, 200) : '',
+    about: str(v.about, 280), hours,
+    tableCount: n >= 1 && n <= 40 ? n : (tableCount || 4), tableBrand: str(v.tableBrand, 40), tableSize: str(v.tableSize, 20),
+    cues: Math.max(0, Math.min(200, Math.round(Number(v.cues) || 0))),
+    lat: Math.abs(Number(v.lat)) <= 90 && v.lat !== '' && v.lat != null ? Number(v.lat) : null, lng: Math.abs(Number(v.lng)) <= 180 && v.lng !== '' && v.lng != null ? Number(v.lng) : null,
+    open: v.open !== false, openedAt: v.openedAt || null, eventId: v.open !== false && v.eventId ? String(v.eventId) : null,
+    setup: !!v.setup,
+  });
+}
+function seedEvents(now) {
+  const day = n => new Date(now + n * 86400000).toISOString().slice(0, 10);
+  return [
+    { id: 'e1', title: 'Tuesday 8-ball tournament', kind: 'tournament', date: day(2), time: '19:00', gameType: '8-ball', cap: 16, fee: '$10', prize: 'Bar tab for the winner', about: 'Single elimination, races to 3. Every game on Table 1 is rated by the camera referee.', players: [{ name: 'Sam', at: now }, { name: 'Ana', at: now }, { name: 'Noor', at: now }] },
+    { id: 'e2', title: 'Women and non-binary pool night', kind: 'social', date: day(4), time: '18:00', gameType: '8-ball', cap: 0, fee: 'Free', prize: '', about: 'Tables held for women and non-binary players. Beginners welcome, cues and coaching tips on hand.', players: [{ name: 'Priya', at: now }] },
+  ];
+}
+// Other bars on Loopool, for the player's Bars tab. In this single-venue version they are example listings
+// (profile and events only); a shared database (n8n Data Tables) would make every signed-up bar appear here.
+function seedDirectory(now) {
+  const day = n => new Date(now + n * 86400000).toISOString().slice(0, 10);
+  const H = (o, c, late) => { const h = {}; DAYS.forEach(d => { h[d] = { open: o, close: (d === 'fri' || d === 'sat') && late ? late : c, closed: false }; }); return h; };
+  return [
+    { id: 'b_cue', name: 'The Cue Club', address: '1001 Granville St, Vancouver', about: 'Nine 9-ft Diamond tables and a weekly 9-ball league.', hours: H('12:00', '01:00', '02:00'), tableCount: 9, tableBrand: 'Diamond', tableSize: '9 ft', cues: 30, example: true, lat: 49.2786, lng: -123.1253,
+      events: [{ id: 'x1', title: 'Thursday 9-ball league', kind: 'league', date: day(3), time: '19:30', gameType: '9-ball', fee: '$15', count: 11, cap: 24 }] },
+    { id: 'b_rack', name: 'Bank Shot Bar', address: '2150 Commercial Dr, Vancouver', about: 'Neighbourhood bar with three tables and a friendly beginners night.', hours: H('16:00', '00:00', '01:00'), tableCount: 3, tableBrand: 'Valley', tableSize: '7 ft', cues: 10, example: true, lat: 49.2658, lng: -123.0697,
+      events: [{ id: 'x2', title: 'Beginners night', kind: 'lesson', date: day(1), time: '18:00', gameType: '8-ball', fee: 'Free', count: 5, cap: 0 }] },
+    { id: 'b_side', name: 'Side Pocket Lounge', address: '480 Main St, Vancouver', about: 'Late-night pool and a monthly 8-ball tournament.', hours: H('17:00', '02:00'), tableCount: 6, tableBrand: 'Brunswick', tableSize: '8 ft', cues: 18, example: true, lat: 49.2799, lng: -123.1003, events: [] },
+  ];
+}
+function cleanEvent(e, old) {
+  const cap = Math.round(Number(e.cap));
+  return { id: old ? old.id : '', title: str(e.title, 60), kind: EVENT_KINDS.includes(e.kind) ? e.kind : 'tournament', date: isoDay(e.date), time: hhmm(e.time) || '19:00',
+    gameType: RULES.games.includes(e.gameType) ? e.gameType : '8-ball', cap: cap > 0 && cap <= 256 ? cap : 0, fee: str(e.fee, 30), prize: str(e.prize, 60), about: str(e.about, 280), players: old ? old.players : [] };
+}
+function readJSON(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(String(v || '')); } catch (e) { return null; } }
+// Venue and event actions. Returns an error message, or '' when it worked.
+function venueAction(S, action, p, now) {
+  if (action === 'venue_save') {
+    const v = readJSON(p.profile); if (!v) return 'The profile is missing.';
+    if (!str(v.name, 40)) return 'Give the bar a name.';
+    if (v.mapsUrl && !/^https:\/\//.test(String(v.mapsUrl))) return 'The Google Maps link should start with https://';
+    if (v.website && !/^https:\/\//.test(String(v.website))) return 'The website link should start with https://';
+    const first = !S.venue.setup;
+    S.venue = venueProfile(Object.assign({}, S.venue, v, { open: S.venue.open, openedAt: S.venue.openedAt, eventId: S.venue.eventId, setup: true }), S.tables.length);
+    log(S, now, 'venue', first ? S.venue.name + ' is set up on Loopool' : 'The bar profile was updated');
+    return '';
+  }
+  if (action === 'venue_open') {
+    const open = p.open === true || p.open === '1' || p.open === 'true';
+    const ev = open && p.event ? S.events.find(x => x.id === String(p.event)) : null;
+    if (open && p.event && !ev) return 'That event no longer exists.';
+    S.venue.open = open; S.venue.openedAt = open ? now : null; S.venue.eventId = ev ? ev.id : null;
+    log(S, now, 'venue', open ? (ev ? ev.title + ' has started at ' + S.venue.name : S.venue.name + ' started tonight\u2019s session') : S.venue.name + ' ended the session');
+    return '';
+  }
+  if (action === 'venue_delete') {
+    S.venue = venueProfile({ name: 'New bar', open: false, setup: false }, S.tables.length);
+    S.events = [];
+    log(S, now, 'venue', 'The bar profile was deleted');
+    return '';
+  }
+  if (action === 'event_save') {
+    const e = readJSON(p.event); if (!e) return 'The event is missing.';
+    const old = e.id ? S.events.find(x => x.id === e.id) : null;
+    if (e.id && !old) return 'That event no longer exists.';
+    const ev = cleanEvent(e, old);
+    if (!ev.title) return 'Give the event a name.';
+    if (!ev.date) return 'Pick a date for the event.';
+    if (old) Object.assign(old, ev);
+    else { S.eventSeq = (S.eventSeq || 100) + 1; ev.id = 'e' + S.eventSeq; S.events.push(ev); if (S.events.length > 40) S.events.shift(); }
+    log(S, now, 'venue', (old ? 'Event updated: ' : 'New event: ') + ev.title);
+    return '';
+  }
+  const ev = S.events.find(x => x.id === String(p.id || ''));
+  if (!ev) return 'That event no longer exists.';
+  if (action === 'event_remove') { S.events = S.events.filter(x => x !== ev); log(S, now, 'venue', 'Event cancelled: ' + ev.title); return ''; }
+  const q = p.ticket ? findTicket(S, p.ticket) : null;
+  const name = str(p.name, 24) || (q ? q.name : '');
+  if (!name) return 'Please enter your name.';
+  const mine = x => x.name.toLowerCase() === name.toLowerCase();
+  if (action === 'event_join') {
+    if (ev.players.some(mine)) return name + ' is already signed up.';
+    if (ev.cap && ev.players.length >= ev.cap) return ev.title + ' is full.';
+    ev.players.push({ name, at: now });
+    log(S, now, 'venue', name + ' signed up for ' + ev.title);
+    return '';
+  }
+  if (action === 'event_leave') {
+    if (!ev.players.some(mine)) return name + ' isn\'t signed up.';
+    ev.players = ev.players.filter(x => !mine(x));
+    log(S, now, 'venue', name + ' dropped out of ' + ev.title);
+    return '';
+  }
+  return 'Unknown action: ' + action;
+}
+function publicEvents(S, now) {
+  const from = new Date(now - 86400000).toISOString().slice(0, 10);   // today and later (a day of slack for time zones)
+  return S.events.filter(e => e.date >= from).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+    .map(e => ({ id: e.id, live: !!(S.venue.open && S.venue.eventId === e.id), title: e.title, kind: e.kind, date: e.date, time: e.time, gameType: e.gameType, cap: e.cap, fee: e.fee, prize: e.prize, about: e.about, count: e.players.length, names: e.players.map(x => x.name).slice(0, 64) }));
+}
+
 // One entry point for every request. Returns the new state, the response for the app, texts to send and a finished-game summary.
 function handle(S, action, p, realNow) {
   const notes = [];
   const now = () => realNow + (S.skew || 0);
-  const fail = (msg, code) => ({ S, response: Object.assign(publicState(S, now(), p.ticket), { ok: false, error: msg, code: code || 400 }), notify: notes, finished: null });
+  const fail = (msg, code) => ({ S, response: Object.assign(publicState(S, now(), p.ticket, p.player), { ok: false, error: msg, code: code || 400 }), notify: notes, finished: null });
   const finBefore = S.finished || 0;
   if (p.base) S.base = String(p.base).slice(0, 200);
+  if (!S.venue || !S.venue.hours) S.venue = venueProfile(S.venue, S.tables.length);   // saved before bar profiles existed
+  if (!Array.isArray(S.events)) S.events = [];
+  if (!S.accounts || typeof S.accounts !== 'object') S.accounts = {};
   if (p.k != null && p.k !== '') { const kq = p.ticket ? findTicket(S, p.ticket) : null; if (!kq || !kq.key || kq.key !== String(p.k)) return fail('This link doesn\'t match a ticket.', 403); }
   if (p.cams) {                                          // a camera page says which tables it is watching (before settle, so a game starting now is refereed)
     String(p.cams).toUpperCase().split(',').slice(0, 20).forEach(id => {
@@ -415,6 +546,7 @@ function handle(S, action, p, realNow) {
   }
   settle(S, now(), notes);
   const q = p.ticket ? findTicket(S, p.ticket) : null;
+  let extra = null;
   switch (action) {
     case 'state': break;
     case 'join': {
@@ -422,12 +554,22 @@ function handle(S, action, p, realNow) {
       if (!name) return fail('Please enter your name.');
       const gameType = RULES.games.includes(p.gameType) ? p.gameType : '8-ball';
       const refOnly = (p.refOnly === true || p.refOnly === 'true' || p.refOnly === '1') && gameType === '8-ball';
-      let pid = Object.keys(S.players).find(k => S.players[k].name.toLowerCase() === name.toLowerCase());
-      if (pid && S.queue.some(x => x.pid === pid && ['waiting', 'called', 'playing'].includes(x.status))) return fail(name + ' is already in the queue or at a table.');
-      if (!pid) { pid = 'p_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '') + '_' + (S.seq + 1); S.players[pid] = { name, rating: RULES.startRating, w: 0, l: 0 }; }
       const em = String(p.email || '').trim().slice(0, 80);
       const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em) ? em : '';
       if (em && !email) return fail('That email address doesn\'t look right.');
+      const acct = email && S.accounts[email.toLowerCase()];
+      if (acct && String(p.hash || '') !== acct.hash) return fail('There\'s an account for ' + email + '. Log in to join the queue.', 401);
+      let pid = Object.keys(S.players).find(k => S.players[k].name.toLowerCase() === name.toLowerCase());
+      // Already on the board or at a table under this name: if it's the same person (same ticket or same email),
+      // hand their ticket back instead of refusing, so a lost page or a second tap never locks them out.
+      const active = pid ? S.queue.find(x => x.pid === pid && ['waiting', 'called', 'playing'].includes(x.status)) : null;
+      if (active) {
+        const same = (p.ticket && p.ticket === active.ticket) || (email && active.email && active.email.toLowerCase() === email.toLowerCase());
+        if (!same) return fail(name + ' is already on the board. Use a different name, or the email you joined with.');
+        p.ticket = active.ticket;
+        break;
+      }
+      if (!pid) { pid = 'p_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '') + '_' + (S.seq + 1); S.players[pid] = { name, rating: RULES.startRating, w: 0, l: 0 }; }
       const ticket = 'A' + (++S.seq);
       const key = Math.random().toString(36).slice(2, 10);
       S.queue.push({ ticket, pid, name, email, key, gameType, refOnly, real: true, status: 'waiting', joinedAt: now() });
@@ -544,6 +686,29 @@ function handle(S, action, p, realNow) {
       break;
     }
     case 'reset': break;
+    case 'account_create': case 'account_login': {
+      // Player accounts: made after a player's first game. The phone sends a SHA-256 of the password (salted with the
+      // email), never the password itself. Fine for a hackathon; a real launch would use a proper login service.
+      const email = String(p.email || '').trim().toLowerCase(), hash = String(p.hash || '');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Enter the email you play with.');
+      if (!/^[a-f0-9]{16,64}$/.test(hash)) return fail('Choose a password of at least 6 characters.');
+      const a = S.accounts[email];
+      if (action === 'account_create') {
+        const name = String(p.name || '').trim().slice(0, 24);
+        if (!name) return fail('Please enter your name.');
+        if (a) return fail('There\'s already an account for this email. Log in instead.', 409);
+        S.accounts[email] = { name, email, hash, at: now() };
+        extra = { account: { name, email } };
+      } else {
+        if (!a || a.hash !== hash) return fail('That email and password don\'t match.', 401);
+        extra = { account: { name: a.name, email: a.email } };
+      }
+      break;
+    }
+    case 'venue_save': case 'venue_open': case 'venue_delete': case 'event_save': case 'event_remove': case 'event_join': case 'event_leave': {
+      const err = venueAction(S, action, p, now()); if (err) return fail(err);
+      break;
+    }
     default: {
       if (!STAFF_ACTIONS.includes(action)) return fail('Unknown action: ' + action);
       const t = S.tables.find(x => x.id === String(p.table || 'T1').toUpperCase());
@@ -602,5 +767,5 @@ function handle(S, action, p, realNow) {
   }
   const nFin = (S.finished || 0) - finBefore;
   const finished = nFin > 0 ? S.history.slice(0, nFin) : null;
-  return { S, response: publicState(S, now(), p.ticket), notify: notes, finished };
+  return { S, response: Object.assign(publicState(S, now(), p.ticket, p.player), extra || {}), notify: notes, finished };
 }

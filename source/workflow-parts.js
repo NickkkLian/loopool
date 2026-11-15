@@ -92,7 +92,12 @@ function briefReferee() {
     (me.position ? ', #' + me.position + ' in line' : '') + (me.eta ? ', estimated wait about ' + me.eta.min + ' min, most likely ' + me.eta.table : '') +
     (me.table ? ', at ' + ((r.tables.find(t => t.id === me.table) || {}).name || me.table) + ' as ' + (me.side === 'champ' ? 'the table holder' : 'the challenger') : '') + '.';
   const top = r.leaderboard.slice(0, 5).map((p, i) => (i + 1) + '. ' + p.name + ' ' + p.rating).join(', ');
-  const brief = 'Time: ' + new Date(r.now).toLocaleTimeString('en-CA', { timeZone: 'America/Vancouver', hour: 'numeric', minute: '2-digit' }) + '\n' + asker + '\nTABLES\n' + tables + '\nQUEUE\n' + queue + "\nTONIGHT'S RATINGS: " + top;
+  // The bar's profile and upcoming events (from the Bar setup page), so players can ask "when's the next tournament?"
+  const v = r.venue || {}, days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const hours = v.hours ? days.map(d => d + ' ' + (v.hours[d].closed ? 'closed' : v.hours[d].open + '-' + v.hours[d].close)).join(', ') : 'not set';
+  const bar = (v.name || 'the bar') + (v.open === false ? ' (closed right now)' : '') + '. Hours: ' + hours + (v.address ? '. Address: ' + v.address : '') + (v.tableCount ? '. ' + v.tableCount + ' tables' + (v.tableBrand ? ' (' + v.tableBrand + (v.tableSize ? ', ' + v.tableSize : '') + ')' : '') : '') + (v.cues ? ', ' + v.cues + ' house cues' : '');
+  const events = (r.events || []).length ? r.events.map(e => '- ' + e.date + ' ' + e.time + ': ' + e.title + ' (' + e.kind + ', ' + e.gameType + (e.fee ? ', entry ' + e.fee : '') + (e.prize ? ', prize ' + e.prize : '') + ', ' + e.count + (e.cap ? ' of ' + e.cap : '') + ' signed up). ' + (e.about || '') + ' Players sign up from the list at the bottom of their phone screen.').join('\n') : '- none posted';
+  const brief = 'Time: ' + new Date(r.now).toLocaleTimeString('en-CA', { timeZone: 'America/Vancouver', hour: 'numeric', minute: '2-digit' }) + '\n' + asker + '\nTABLES\n' + tables + '\nQUEUE\n' + queue + "\nTONIGHT'S RATINGS: " + top + '\nTHE BAR: ' + bar + '\nUPCOMING EVENTS\n' + events;
   return [{ json: { question: $json.question || 'Hi', brief } }];
 }
 
@@ -332,4 +337,115 @@ async function loadFrame() {
   return [{ json: { ok: true, at: f.at }, binary: { data: await this.helpers.prepareBinaryData(Buffer.from(f.b64, 'base64'), id + '.jpg', f.mime) } }];
 }
 
-module.exports = { prepareShot, scoreShot, readScoredShot, applyShot, cameraReply, loadFrame, baseUrlSnippet, readRequest, readEmailLink, readQuestion, resultPage, briefReferee, writeEmail, briefShot, saveCommentary };
+// ---------- Profile auto-fill (GET /pool-lookup?url=...): read a bar's website or Google Maps page into a profile ----------
+function readLookup() {
+  // The link the bar pasted on the setup page, e.g. ?url=https://maps.app.goo.gl/abc or ?url=https://mybar.com
+  const q = $input.first().json.query || {};
+  let url = String(q.url || '').trim();
+  if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+  let ok = false;
+  try { const u = new URL(url); ok = /^https?:$/.test(u.protocol) && !/^(localhost|127\.|10\.|192\.168\.|169\.254\.)/.test(u.hostname); } catch (e) { ok = false; }
+  const maps = /(^|\.)(google\.[a-z.]+|goo\.gl|maps\.app\.goo\.gl)$/i.test(ok ? new URL(url).hostname : '') && /maps|goo\.gl/i.test(url);
+  return [{ json: { url: ok ? url : '', maps, error: ok ? '' : 'Paste a full link to your website or your Google Maps page.' } }];
+}
+
+function pageFacts() {
+  // Turns the fetched page into facts we can trust (schema.org data, page title, Google Maps place name)
+  // plus a short plain-text version of the page for the AI to read for the rest (tables, cues, about).
+  const link = $('Read the link').first().json;
+  const res = $input.first().json || {};
+  const html = String(res.body != null ? res.body : res.data != null ? res.data : '').slice(0, 600000);
+  const facts = {};
+  const dec = s => String(s || '').replace(/&amp;/g, '&').replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').trim();
+  const meta = name => {                                  // <meta property="og:title" content="..."> in either attribute order
+    const tags = html.match(/<meta\b[^>]*>/gi) || [];
+    for (const tag of tags) {
+      const key = /(?:property|name)\s*=\s*(["'])(.*?)\1/i.exec(tag), val = /content\s*=\s*(["'])([\s\S]*?)\1/i.exec(tag);
+      if (key && val && key[2].toLowerCase() === name) return dec(val[2]);
+    }
+    return '';
+  };
+  // 1. schema.org data (most bar websites and booking sites have it): name, address, phone, opening hours
+  const DAY = { mo: 'mon', tu: 'tue', we: 'wed', th: 'thu', fr: 'fri', sa: 'sat', su: 'sun' }, ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const hm = t => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? String(Math.min(23, Number(m[1]))).padStart(2, '0') + ':' + m[2] : ''; };
+  const setDays = (days, open, close) => { if (!open || !close) return; facts.hours = facts.hours || {}; days.forEach(d => { facts.hours[d] = { open, close, closed: false }; }); };
+  const dayKey = d => { const k = String(d || '').replace(/^https?:\/\/schema\.org\//i, '').slice(0, 2).toLowerCase(); return DAY[k] || ''; };
+  const objs = [];
+  const re = /<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi; let m;
+  while ((m = re.exec(html))) { try { const j = JSON.parse(m[1].trim()); (Array.isArray(j) ? j : [j]).forEach(o => { objs.push(o); if (o && Array.isArray(o['@graph'])) objs.push(...o['@graph']); }); } catch (e) { /* broken JSON-LD: skip */ } }
+  const biz = objs.find(o => o && /BarOrPub|LocalBusiness|Restaurant|NightClub|EntertainmentBusiness|SportsActivityLocation|FoodEstablishment/i.test([].concat(o['@type'] || []).join(' ')));
+  if (biz) {
+    if (biz.name) facts.name = dec(biz.name);
+    const a = biz.address;
+    if (a) facts.address = typeof a === 'string' ? dec(a) : [a.streetAddress, a.addressLocality, a.addressRegion].filter(Boolean).map(dec).join(', ');
+    if (biz.telephone) facts.phone = dec(biz.telephone);
+    if (biz.description) facts.about = dec(biz.description).slice(0, 280);
+    if (biz.url && /^https:\/\//.test(biz.url)) facts.website = biz.url;
+    if (biz.geo && biz.geo.latitude != null) { facts.lat = Number(biz.geo.latitude); facts.lng = Number(biz.geo.longitude); }
+    [].concat(biz.openingHoursSpecification || []).forEach(sp => { const days = [].concat(sp.dayOfWeek || []).map(dayKey).filter(Boolean); setDays(days, hm(sp.opens), hm(sp.closes)); });
+    [].concat(biz.openingHours || []).forEach(str => {               // "Mo-Th 16:00-00:00" or "Fr,Sa 16:00-02:00"
+      const mm = /^([A-Za-z,\- ]+)\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/.exec(String(str)); if (!mm) return;
+      const days = [];
+      mm[1].split(',').forEach(part => { const [x, y] = part.trim().split('-').map(dayKey); if (!x) return; if (!y) { days.push(x); return; } for (let i = ORDER.indexOf(x); i !== -1; i = (i + 1) % 7) { days.push(ORDER[i]); if (ORDER[i] === y || days.length > 7) break; } });
+      setDays(days, hm(mm[2]), hm(mm[3]));
+    });
+    if (facts.hours) ORDER.forEach(d => { if (!facts.hours[d]) facts.hours[d] = { open: '', close: '', closed: true }; });
+  }
+  // 2. Google Maps: the place name is in the link, and the page title reads "Name · Address"
+  if (link.maps) {
+    const pm = /\/maps\/place\/([^/@?]+)/.exec(link.url) || /\/maps\/place\/([^/@?]+)/.exec(html);
+    if (pm && !facts.name) facts.name = decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim();
+    const og = meta('og:title');
+    if (og && og.includes('·')) { const [n, ...rest] = og.split('·').map(x => x.trim()); if (n && !facts.name) facts.name = n; if (rest.length && !facts.address) facts.address = rest.join(', '); }
+    if (!facts.website && link.url) facts.mapsUrl = link.url;
+  }
+  if (link.maps) { facts.mapsUrl = link.url; const g = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(link.url) || /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(link.url + ' ' + html.slice(0, 200000)); if (g) { facts.lat = Number(g[1]); facts.lng = Number(g[2]); } }
+  else if (!facts.website && link.url) facts.website = link.url;
+  if (!facts.name) { const t = meta('og:site_name') || meta('og:title') || dec((/<title[^>]*>([\s\S]*?)<\/title>/i.exec(html) || [])[1]); if (t) facts.name = t.split(/\s[|\-–·]\s/)[0].trim().slice(0, 40); }
+  if (!facts.about) { const d = meta('og:description') || meta('description'); if (d) facts.about = d.slice(0, 280); }
+  // 3. the page as plain text, for the AI (tables, cues, brand, anything said in words)
+  const text = dec(html.replace(/<(script|style|noscript|svg)[\s\S]*?<\/\1>/gi, ' ').replace(/<br\s*\/?>|<\/(p|div|li|h\d|tr)>/gi, '\n').replace(/<[^>]+>/g, ' ')).replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim().slice(0, 7000);
+  const status = res.statusCode || 0;
+  const fetched = html.length > 0;
+  const prompt = 'Below is text from the web page of a bar or pool hall (' + link.url + ').\n' +
+    'Facts already found: ' + JSON.stringify(facts) + '\n\n' +
+    'Return ONLY a JSON object with these keys, using null for anything the page does not clearly state (never guess):\n' +
+    '{"name": string, "about": string (one or two sentences for pool players, at most 200 characters), "address": string, "phone": string, ' +
+    '"tableCount": number (pool tables), "tableBrand": string, "tableSize": "7 ft" | "8 ft" | "9 ft", "cues": number (house cues), ' +
+    '"hours": {"mon": {"open": "HH:MM", "close": "HH:MM", "closed": boolean}, ... for tue wed thu fri sat sun}}\n\nPAGE TEXT\n' + (text || '(empty)');
+  return [{ json: { url: link.url, facts, prompt, read: fetched && text.length > 40, error: link.error || (fetched ? '' : 'The page could not be opened' + (status ? ' (HTTP ' + status + ')' : '') + '.') } }];
+}
+
+function profileFromPage() {
+  // Merges the AI's reading with the facts found in the page's own data (those win), and checks every field.
+  const base = $('Page facts').first().json;
+  let ai = {};
+  const out = String(($input.first().json || {}).output || '');
+  const j = out.slice(out.indexOf('{'), out.lastIndexOf('}') + 1);
+  try { ai = JSON.parse(j) || {}; } catch (e) { ai = {}; }
+  const str = (v, n) => (v == null ? '' : String(v)).trim().slice(0, n);
+  const hm = t => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(t || '')) ? String(t) : '';
+  const p = {}, f = base.facts || {};
+  p.name = str(f.name || ai.name, 40);
+  p.about = str(f.about || ai.about, 280);
+  p.address = str(f.address || ai.address, 120);
+  p.phone = str(f.phone || ai.phone, 30);
+  if (f.website) p.website = f.website;
+  if (f.mapsUrl) p.mapsUrl = f.mapsUrl;
+  if (Math.abs(f.lat) <= 90 && Math.abs(f.lng) <= 180) { p.lat = f.lat; p.lng = f.lng; }
+  const n = Math.round(Number(ai.tableCount)); if (n >= 1 && n <= 40) p.tableCount = n;
+  const c = Math.round(Number(ai.cues)); if (c >= 1 && c <= 200) p.cues = c;
+  if (ai.tableBrand) p.tableBrand = str(ai.tableBrand, 40);
+  if (['7 ft', '8 ft', '9 ft'].includes(ai.tableSize)) p.tableSize = ai.tableSize;
+  const H = f.hours || ai.hours;
+  if (H && typeof H === 'object') {
+    p.hours = {};
+    ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(d => { const h = H[d] || {}; p.hours[d] = { open: hm(h.open), close: hm(h.close), closed: !!h.closed || !(hm(h.open) && hm(h.close)) }; });
+    if (Object.values(p.hours).every(h => h.closed)) delete p.hours;   // nothing usable
+  }
+  Object.keys(p).forEach(k => { if (p[k] === '' || p[k] == null) delete p[k]; });
+  const found = Object.keys(p);
+  return [{ json: { ok: found.length > 0, profile: p, found, source: base.url, error: found.length ? '' : (base.error || 'We couldn\'t find your bar\'s details on that page. Fill in the profile yourself, or try your website link.') } }];
+}
+
+module.exports = { readLookup, pageFacts, profileFromPage, prepareShot, scoreShot, readScoredShot, applyShot, cameraReply, loadFrame, baseUrlSnippet, readRequest, readEmailLink, readQuestion, resultPage, briefReferee, writeEmail, briefShot, saveCommentary };

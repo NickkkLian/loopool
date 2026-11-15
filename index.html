@@ -29,6 +29,7 @@
   --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }   /* hidden always wins over a display rule */
 html, body { margin: 0; }
 body { background: var(--board); color: var(--chalk); font: 15px/1.45 var(--f-body); -webkit-font-smoothing: antialiased; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--tv); }
@@ -436,48 +437,226 @@ body.tvfull .tv { border: 0; border-radius: 0; }
 .tvfit .aside .qrline { max-height: 230px; gap: 18px; }
 .tvfit .aside .qrbox { height: 100%; align-self: auto; }
 .tvfit .qrline .sign { font-size: 30px; }
+/* bar setup (#business) and events on the player phone: same chalkboard look as the counter tablet */
+.biz-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.biz-card { background: var(--board); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.biz-hd { display: flex; align-items: baseline; gap: 10px 14px; flex-wrap: wrap; }
+.biz-hd .sign { font-size: 24px; }
+.biz-hd .dim { font-size: 13.5px; }
+.biz-pill { margin-left: auto; font: 500 12px var(--f-mono); text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line-3); color: var(--dim); }
+.biz-pill.on { border-color: var(--good); color: var(--good); }
+.biz-steps { margin: 0; padding: 0; list-style: none; counter-reset: st; display: flex; flex-direction: column; gap: 14px; }
+.biz-steps li { counter-increment: st; display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: 10px; row-gap: 6px; }
+.biz-steps li::before { content: counter(st); grid-row: span 4; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line-3); display: grid; place-items: center; font: 800 16px/1 var(--f-sign); color: var(--dim); }
+.biz-steps li.done::before { content: "\2713"; border-color: var(--good); color: var(--good); }
+.biz-steps b { font-size: 15px; }
+.biz-steps .dim { font-size: 13.5px; }
+.biz-cams { display: flex; gap: 6px; flex-wrap: wrap; }
+.biz-cam { font: 500 12px var(--f-mono); padding: 3px 8px; border-radius: 4px; background: var(--board-3); color: var(--dim); }
+.biz-cam.on { color: var(--good); }
+.biz-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+a.b { text-decoration: none; }
+.biz-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+.biz-form .wide { grid-column: 1 / -1; }
+.biz-f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.biz-f label { font-size: 13.5px; font-weight: 600; }
+.biz-f small { font-size: 12.5px; color: var(--dim); }
+.biz input, .biz select, .biz textarea { min-height: 40px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--board-2); color: var(--chalk); font: inherit; font-size: 14px; width: 100%; color-scheme: dark; }
+.biz textarea { resize: vertical; }
+.biz [hidden] { display: none !important; }
+.biz input::placeholder, .biz textarea::placeholder { color: var(--faint); }
+.biz-hours { display: flex; flex-direction: column; gap: 6px; }
+.biz-hr { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 14px; }
+.biz-chk { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); white-space: nowrap; }
+.biz .biz-chk input { width: 18px; min-height: 18px; height: 18px; }
+.biz-evlist { display: flex; flex-direction: column; }
+.biz-ev { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.biz-ev:last-child { border-bottom: 0; }
+.biz-ev .when b, .biz-prow .when b { display: block; font: 800 20px/1 var(--f-sign); text-transform: uppercase; }
+.biz-ev .when small, .biz-prow .when small { font: 500 12px var(--f-mono); color: var(--dim); }
+.biz-ev > div > b { display: block; font-size: 15px; }
+.biz-ev small { display: block; font-size: 13px; color: var(--dim); }
+.biz-ev .biz-names { font-size: 17px; color: var(--chalk); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.biz-evr { display: flex; gap: 6px; align-items: center; }
+.biz-evr .num { font: 800 20px/1 var(--f-sign); margin-right: 4px; }
+.biz-phone { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 16px; }
+.biz-prow { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 58px; padding: 6px 0; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--chalk); text-align: left; }
+.biz-prow:last-child { border-bottom: 0; }
+.biz-prow b { display: block; font-size: 15px; font-weight: 600; }
+.biz-prow small { display: block; font-size: 13px; color: var(--dim); }
+.biz-prow .go { font: 800 15px/1 var(--f-sign); letter-spacing: .05em; text-transform: uppercase; color: var(--blue-text); }
+.cta:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 900px) { .biz-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .biz-form { grid-template-columns: minmax(0, 1fr); } .biz-hr { grid-template-columns: 70px minmax(0, 1fr) auto minmax(0, 1fr); } .biz-hr .biz-chk { grid-column: 2 / -1; } .biz-ev { grid-template-columns: 60px minmax(0, 1fr); } .biz-evr { grid-column: 1 / -1; justify-content: flex-end; } }
+/* app shell: the start screen, the player app (phone) and the bar app (tablet or phone) */
+.start { max-width: 460px; margin: 6vh auto 40px; display: flex; flex-direction: column; gap: 18px; padding: 0 4px; }
+.start-mark b { font-size: 30px; }
+.start-pick { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; padding: 20px; border-radius: 14px; border: 1px solid var(--line-2); background: var(--board-2); color: var(--chalk); text-align: left; }
+.start-pick:hover { border-color: var(--brass); }
+.start-pick b { font: 800 26px/1 var(--f-sign); letter-spacing: .04em; text-transform: uppercase; }
+.start-pick small { font-size: 14px; color: var(--dim); }
+.ico { display: inline-flex; }
+.papp { max-width: 520px; margin: 0 auto; min-height: calc(100vh - 60px); display: flex; flex-direction: column; }
+.papp-body { flex: 1; }
+.papp-body .ph { min-height: 0; }
+.papp-tabs { position: sticky; bottom: 0; z-index: 5; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--tv); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.papp-tabs button { display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 60px; padding: 8px 0 6px; border: 0; background: none; color: var(--dim); font: 600 12px var(--f-body); }
+.papp-tabs button[aria-current="page"] { color: var(--brass); }
+.invite { position: relative; margin: 14px 20px 0; padding: 12px 44px 12px 14px; border-radius: 10px; border: 1px solid var(--brass); background: var(--board-2); display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.invite b { font-size: 15px; }
+.invite .quiet { position: absolute; right: 4px; top: 4px; width: 40px; min-height: 40px; border: 0; font-size: 22px; }
+.barlist { display: flex; flex-direction: column; gap: 4px; }
+.barrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
+.barrow:last-child { border-bottom: 0; }
+.barrow-main { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 0; background: none; border: 0; color: var(--chalk); text-align: left; min-width: 0; }
+.barrow-main b { font-size: 16px; font-weight: 600; }
+.barrow-main small { font-size: 13px; color: var(--dim); }
+.barrow-main small.live { color: var(--good); font-family: var(--f-mono); font-size: 12px; }
+.starbtn { width: 48px; min-height: 48px; display: grid; place-items: center; background: none; border: 0; color: var(--faint); }
+.starbtn.on { color: var(--ticket); --fill: var(--ticket); }
+.barsec { display: flex; flex-direction: column; gap: 8px; }
+.hours div { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.hours div.today { color: var(--brass); font-weight: 600; }
+.mecard { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 12px; background: var(--board-2); border: 1px solid var(--line); }
+.mecard .avatar { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: var(--brass); color: var(--ticket-ink); font: 800 22px/1 var(--f-sign); flex: none; }
+.mecard b { display: block; font-size: 16px; }
+.mecard small { display: block; font-size: 13px; color: var(--dim); }
+.mform { display: flex; flex-direction: column; gap: 16px; }
+.quiet.dangerq { color: var(--foul); border-color: #5a2a2a; }
+.bapp { display: flex; flex-direction: column; gap: 16px; padding-bottom: 30px; }
+.bapp-top { display: flex; align-items: center; gap: 12px; padding-top: 14px; flex-wrap: wrap; }
+.bapp-top > .sign { font-size: 30px; margin-right: auto; }
+.bapp-menu { position: relative; }
+.pbtn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--board-2); color: var(--chalk); display: grid; place-items: center; }
+.menu { position: absolute; right: 0; top: 52px; z-index: 9; min-width: 240px; display: flex; flex-direction: column; padding: 6px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--board-3); box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+.menu[hidden] { display: none; }
+.menu button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--chalk); text-align: left; font-weight: 600; font-size: 14.5px; }
+.menu button:hover { background: var(--board-2); }
+.menu button.danger { color: var(--foul); }
+.b.big { min-height: 46px; padding: 0 18px; font-size: 15px; }
+.session { display: flex; justify-content: space-between; align-items: center; gap: 12px 20px; flex-wrap: wrap; padding: 16px 20px; border-radius: 16px; border: 1px solid var(--line); background: var(--board-2); }
+.session.on { border-color: #2f5a43; }
+.session p { margin-top: 6px; }
+.btabs { display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+.btabs button { min-height: 46px; padding: 0 14px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--dim); font-weight: 600; font-size: 15px; white-space: nowrap; }
+.btabs button[aria-current="page"] { color: var(--chalk); border-bottom-color: var(--brass); }
+.bapp-camhd { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.bapp-camhd p { margin-top: 6px; max-width: 640px; }
+[data-bs].offstage { position: absolute; left: -300vw; top: 0; width: 1100px; height: 1px; overflow: hidden; }   /* the camera keeps running while the counter is on screen */
+.bsetup { display: flex; flex-direction: column; gap: 16px; max-width: 860px; }
+.bsetup .biz-form { padding: 18px; }
+.biz input.filled, .biz select.filled, .biz textarea.filled { border-color: var(--good); }
+.autofill { border-color: var(--brass); }
+.controls .views { gap: 16px; margin-right: auto; }
+.controls .views a { padding: 6px 0; }
+body.served footer { display: none; }
+body[data-app="player"] .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 560px) { .bapp-top > .sign { font-size: 24px; } .session { padding: 14px; } .b.big { flex: 1 1 auto; } }
+/* step-by-step flows: back buttons, home pages, sheets */
+.backbtn { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 12px 0 4px; margin-left: -8px; border: 0; background: none; color: var(--blue-text); font-weight: 600; font-size: 15px; }
+.linkbtn { align-self: center; min-height: 44px; border: 0; background: none; color: var(--blue-text); font-weight: 600; font-size: 14.5px; text-decoration: underline; text-underline-offset: 3px; }
+.formerr { color: var(--foul); font-size: 14px; min-height: 0; }
+.formerr:empty { display: none; }
+.notice { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; border: 1px solid var(--brass); background: var(--board-2); font-size: 14px; }
+.notice b { font-size: 15.5px; }
+.notice .b { align-self: flex-start; margin-top: 4px; }
+.bestbar { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 16px; background: var(--board-2); border: 1px solid var(--line-2); }
+.stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.stats.three .stat b { font-size: 28px; }
+.quiet svg { flex: none; }
+.watch { display: flex; flex-direction: column; gap: 8px; padding: 0 20px 26px; }
+.joinbox { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 14px; border: 1px solid var(--blue); background: var(--board-2); }
+.mycard { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--ticket); background: var(--board-2); }
+.mycard b { display: block; font: 800 30px/1 var(--f-sign); color: var(--ticket); margin-top: 4px; }
+.mycard small { font-size: 12.5px; color: var(--dim); }
+.lb div.me { color: var(--ticket); font-weight: 600; background: rgba(235, 187, 78, .14); box-shadow: inset 4px 0 0 var(--ticket); padding-left: 8px; border-radius: 4px; }
+.youtag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 4px; background: var(--ticket); color: var(--ticket-ink); font: 600 11px/1.5 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; vertical-align: 2px; }
+.scanner { position: fixed; inset: 0; z-index: 40; background: rgba(8, 12, 10, .96); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; }
+.scanner[hidden] { display: none; }
+.scan-box { position: relative; width: min(86vw, 380px); aspect-ratio: 1; border-radius: 16px; overflow: hidden; background: #000; }
+.scan-box video { width: 100%; height: 100%; object-fit: cover; }
+.scan-frame { position: absolute; inset: 14%; border: 3px solid var(--brass); border-radius: 12px; }
+.scanner .lede { text-align: center; max-width: 340px; }
+.scanner .cta { max-width: 380px; }
+.bhome { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 18px; align-items: start; padding: 18px 20px; border-radius: 16px; background: var(--board-2); border: 1px solid var(--line); }
+.bhome-info, .bhome-now { display: flex; flex-direction: column; gap: 10px; }
+.fixbox { border: 1px solid var(--line); border-radius: 16px; background: var(--board-2); padding: 0 20px; }
+.fixbox summary { min-height: 52px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; flex-wrap: wrap; }
+.fixbox summary .dim { font-weight: 400; font-size: 13.5px; }
+.fixbox .staffbox { margin: 0 0 16px; padding: 0; border: 0; background: none; }
+.bstart { display: flex; flex-direction: column; gap: 16px; max-width: 860px; }
+.bstart .pick .dim { font-size: 14.5px; }
+.bstart select { min-width: 200px; }
+.tv-exit { position: fixed; top: 12px; right: 12px; z-index: 20; min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-3); background: rgba(18, 26, 23, .85); color: var(--chalk); font-weight: 600; font-size: 14px; opacity: .55; }
+.tv-exit:hover, .tv-exit:focus-visible { opacity: 1; }
+.bapp-camhd { flex-direction: column; align-items: stretch; }
+@media (max-width: 760px) { .bhome { grid-template-columns: minmax(0, 1fr); } .stats.three .stat b { font-size: 24px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
 </head>
 <body>
 <header class="top">
-  <div class="wrap">
-    <div class="mark">
-      <svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg>
-      <b>LOOPOOL</b><span>Queue and camera referee</span>
-    </div>
-    <nav class="views" aria-label="Screens">
-      <a href="#presenter" data-view="presenter">All screens</a>
-      <a href="#phone" data-view="phone">Player phone</a>
-      <a href="#venue" data-view="venue">Counter tablet</a>
-      <a href="#live" data-view="live">Bar TV</a>
-      <a href="#camera" data-view="camera">Camera</a>
-    </nav>
-    <button id="modeBtn" class="src" data-act="settings" title="Where the data comes from">Demo data</button>
-  </div>
   <div class="controls">
     <div class="wrap">
       <span class="label">Demo</span>
+      <span class="dim" style="font-size:13px;margin-right:auto">Made-up players. Hidden on a real bar's page.</span>
       <button class="b go" data-act="quick">Quick start</button>
       <button class="b" data-act="reset">Reset</button>
+      <button id="modeBtn" class="src" data-act="settings" title="Where the data comes from">Demo data</button>
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="view" id="v-presenter" aria-label="All screens">
-    <div class="presenter">
-      <div><p class="label cap">Player phone</p><div class="bezel"><div class="screen"><div class="ph" data-phone></div></div></div></div>
-      <div class="col">
-        <div><p class="label cap">Bar TV · Table 1 livestream</p><div data-tv></div></div>
-        <div><p class="label cap">Counter tablet · staff view</p><div data-venue></div></div>
-      </div>
+  <!-- First visit: pick a side. Players and bars each get their own app; the profile menu switches between them. -->
+  <section class="view" id="v-start" aria-label="Welcome">
+    <div class="start">
+      <div class="mark start-mark"><svg width="34" height="31" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg><b>LOOPOOL</b></div>
+      <h1 class="h1">Pool, without<br>the arguments</h1>
+      <p class="lede">A fair queue for the tables and a camera referee for every shot.</p>
+      <button class="start-pick" data-act="role" data-v="player"><b>I'm here to play</b><small>Join a table's queue, see your rating, find bars and events</small></button>
+      <button class="start-pick" data-act="role" data-v="biz"><b>I run a bar</b><small>Set up your bar, start the night, run the tables and events</small></button>
     </div>
   </section>
-  <section class="view solo" id="v-phone" aria-label="Player phone"><div class="bezel"><div class="screen"><div class="ph" data-phone></div></div></div></section>
-  <section class="view" id="v-venue" aria-label="Counter tablet"><div data-venue></div>
-    <section class="staffbox" aria-label="Staff tools">
+
+  <!-- Player app (phone): your details, then Home, Bars, Ranks, Me -->
+  <section class="view" id="v-player" aria-label="Player app">
+    <div class="papp">
+      <div class="papp-body">
+        <div data-pt="welcome" hidden></div>
+        <div data-pt="home"><div data-home></div><div data-invite></div><div class="ph" data-phone hidden></div><div class="watch" data-watch hidden><span class="label">Watch the game on Table 1</span><div data-tv></div></div></div>
+        <div data-pt="bars" hidden></div>
+        <div data-pt="ranks" hidden></div>
+        <div data-pt="me" hidden></div>
+      </div>
+      <nav class="papp-tabs" aria-label="Player app">
+        <button data-act="ptab" data-v="home"><span class="ico" data-ico="play"></span>Home</button>
+        <button data-act="ptab" data-v="bars"><span class="ico" data-ico="bars"></span>Bars</button>
+        <button data-act="ptab" data-v="ranks"><span class="ico" data-ico="ranks"></span>Ranks</button>
+        <button data-act="ptab" data-v="me"><span class="ico" data-ico="me"></span>Me</button>
+      </nav>
+    </div>
+    <div class="scanner" data-scanner hidden><div class="scan-box"><video playsinline muted></video><div class="scan-frame"></div></div>
+      <p class="lede" data-scanmsg>Point your camera at the QR code on the bar's TV.</p><button class="cta line" data-act="p-scanclose">Cancel</button></div>
+  </section>
+
+  <!-- Bar app (tablet or phone): set up once, then start the night, camera, counter -->
+  <section class="view" id="v-biz" aria-label="Bar app">
+    <div class="bapp">
+      <div class="bapp-top"><span class="sign" data-bname>Your bar</span><span data-bchip></span>
+        <div class="bapp-menu"><button class="pbtn" data-act="bmenu" aria-label="Profile and settings" aria-expanded="false"><span class="ico" data-ico="me"></span></button>
+          <div class="menu" data-bmenu hidden>
+            <button data-act="bm-edit">Edit bar profile</button>
+            <button data-act="bm-player">Switch to the player app</button>
+            <button data-act="bm-delete" class="danger">Delete this business</button>
+          </div></div></div>
+      <div data-bs="setup" hidden></div>
+      <div data-bs="home" hidden>
+        <div data-bhome></div>
+        <div data-venue></div>
+        <details class="fixbox"><summary>Fix a game in play <span class="dim">· switch turn, call a foul, undo, declare a winner</span></summary>
+          <section class="staffbox" aria-label="Staff tools">
       <div class="sb-hd"><span class="sign">Staff tools</span>
         <label class="label" for="sTable">Table</label><select id="sTable"><option value="T1">Table 1 (camera)</option><option value="T2">Table 2</option><option value="T3">Table 3</option><option value="T4">Table 4</option></select>
         <span class="sb-now" id="sNow" role="status"></span></div>
@@ -497,8 +676,16 @@ body.tvfull .tv { border: 0; border-radius: 0; }
         </div>
       </div>
     </section>
+        </details>
+        <div data-bevents></div>
+      </div>
+      <div data-bs="start" hidden></div>
+      <div data-bs="camera" hidden><div class="bapp-camhd" data-camhd></div><div data-camera></div></div>
+      <div data-bs="tv" hidden><button class="tv-exit" data-act="biz-tvexit">Exit TV view</button><div data-tv></div></div>
+    </div>
   </section>
-  <section class="view" id="v-camera" aria-label="Table camera"><div data-camera></div></section>
+
+  <!-- Bar TV: opened on the bar's TV with #tv -->
   <section class="view" id="v-live" aria-label="Bar TV"><div data-tv></div></section>
 </main>
 <footer class="wrap">Demo venue with made-up players. Shot events come from a recorded game until a camera is connected.</footer>
@@ -573,7 +760,9 @@ function seedState(now) {
   const seat = (pid, name) => ({ pid, name, ticket: null, real: false, present: true });
   return {
     v: 1, skew: 0, seq: 101, createdAt: now, flags: {},
-    venue: { name: 'Loopool', note: 'Demo venue · fake players' },
+    venue: venueProfile({ name: 'Loopool', note: 'Demo venue · fake players', address: '6133 University Blvd, Vancouver', tableBrand: 'Diamond', tableSize: '8 ft', cues: 12, about: 'Four tables, a camera referee on Table 1 and a fair queue for everyone.', setup: true, lat: 49.2661, lng: -123.2497 }, 4),
+    events: seedEvents(now),
+    directory: seedDirectory(now),
     players: {
       p_sam: P('Sam', 1340, 18, 9), p_lee: P('Lee', 1255, 11, 10), p_ana: P('Ana', 1410, 24, 8), p_kai: P('Kai', 1175, 6, 9),
       p_noor: P('Noor', 1305, 15, 11), p_jules: P('Jules', 1230, 9, 9), p_kim: P('Kim', 1265, 12, 10), p_ravi: P('Ravi', 1190, 7, 9),
@@ -751,6 +940,7 @@ function settle(S, now, notes) {
           }
         }
         if (!t.champ && t.challenger) { t.champ = t.challenger; t.challenger = null; t.streak = 0; changed = true; }
+        const called = [];
         for (const side of ['champ', 'challenger']) {
           if (t[side]) continue;
           const q = S.queue.find(x => eligible(x, t));
@@ -758,9 +948,13 @@ function settle(S, now, notes) {
           q.status = 'called'; q.table = t.id; q.calledAt = now; q.seat = side;
           t[side] = seatFromTicket(q, now);
           log(S, now, 'queue', q.name + ' was called to ' + t.name);
-          text(S, now, q.ticket, 'It\'s your turn! Go to ' + t.name + ' and check in within ' + Math.round(RULES.checkinSec / 60) + ' minutes, or the next name on the board is called.', notes, { subject: 'Your table is ready: ' + t.name, buttons: [['I\'m at the table', 'checkin']] });
+          called.push([q, side]);
           changed = true;
         }
+        called.splice(0).forEach(([q, side]) => {   // after both seats are filled, so the email can name the opponent
+          const opp = t[side === 'champ' ? 'challenger' : 'champ'];
+          text(S, now, q.ticket, 'It\'s your turn! Go to ' + t.name + (opp ? ' to play ' + opp.name : '') + '. Check in within ' + Math.round(RULES.checkinSec / 60) + ' minutes, or your spot goes to the next name on the board.', notes, { subject: 'Your table is ready: ' + t.name + (opp ? ' vs ' + opp.name : ''), buttons: [['I\'m at the table', 'checkin']] });
+        });
         if (t.champ && t.challenger && t.champ.present && t.challenger.present) { startGame(S, t, now); changed = true; }
       }
     }
@@ -874,7 +1068,7 @@ function etas(S, now) {
   return out;
 }
 
-function publicState(S, now, ticket) {
+function publicState(S, now, ticket, player) {
   const E = etas(S, now);
   const rating = pid => (S.players[pid] || {}).rating || RULES.startRating;
   const seatPub = (s, t, side) => s ? { name: s.name, rating: rating(s.pid), present: !!s.present, real: !!s.real, ticket: s.ticket ? s.ticket : null, checkinLeft: !s.present && s.calledAt ? Math.max(0, Math.round(((s.real ? RULES.checkinSec : RULES.simCheckinSec) * 1000 - (now - s.calledAt)) / 1000)) : null, streak: side === 'champ' ? t.streak : 0 } : null;
@@ -884,7 +1078,7 @@ function publicState(S, now, ticket) {
     if (g) status = g.status === 'review' ? (g.review && g.review.staff ? 'staff' : 'review') : g.status === 'confirm' ? 'confirm' : 'playing';
     else if (t.champ && t.challenger) status = 'checkin';
     else if (t.champ) status = 'waiting';
-    const pub = { id: t.id, name: t.name, ref: t.ref, camera: refereed(t, now), gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
+    const pub = { id: t.id, name: t.name, ref: t.ref, camera: refereed(t, now), camLive: camOn(t, now), gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
     if (g) {
       pub.game = { id: g.id, mode: g.mode, rated: g.rated, startedAt: g.startedAt, minutes: Math.max(0, Math.round((now - g.startedAt) / MIN)), left: g.mode === 'sim' ? Math.max(1, Math.round((g.endsAt - now) / MIN)) : null, status: g.status };
       if (g.mode === 'camera') Object.assign(pub.game, { gameType: g.gameType || t.gameType, lastReason: g.lastReason || '', turn: g.turn, groups: g.groups, onTable: g.onTable, positions: g.positions, lastShot: g.lastShot, shots: g.shots.slice(-14), review: g.review, ballInHand: g.ballInHand, winner: g.winner, winReason: g.winReason || '', confirm: g.confirm });
@@ -900,8 +1094,12 @@ function publicState(S, now, ticket) {
   const sharp = top(r => r.avgShot, r => r.shots >= 5); if (sharp) sharp.badges.push('sharpshooter');
   const fair = top(r => -r.fouls / r.shots, r => r.shots >= 5); if (fair) fair.badges.push('fair_play');
   const bestShot = top(r => r.best, r => r.shots >= 1); if (bestShot && bestShot.best >= 85) bestShot.badges.push('best_shot');
-  leaderboard.sort((a, b) => b.rating - a.rating); leaderboard.length = Math.min(leaderboard.length, 10);
-  const out = { ok: true, now, venue: S.venue, rules: { maxWins: RULES.maxWins, checkinSec: RULES.checkinSec }, tables, queue, leaderboard, recent: S.history.slice(0, 6), feed: S.feed.slice(-14).reverse() };
+  leaderboard.sort((a, b) => b.rating - a.rating);
+  const pname = String(player || '').trim().toLowerCase(), mi = pname ? leaderboard.findIndex(r => r.name.toLowerCase() === pname) : -1;
+  const my = mi < 0 ? null : Object.assign({}, leaderboard[mi], { rank: mi + 1, of: leaderboard.length,
+    games: S.history.filter(h => h.winner.toLowerCase() === pname || h.loser.toLowerCase() === pname).slice(0, 8).map(h => ({ at: h.at, table: h.table, won: h.winner.toLowerCase() === pname, opponent: h.winner.toLowerCase() === pname ? h.loser : h.winner, rated: h.rated, delta: h.delta })) });
+  leaderboard.length = Math.min(leaderboard.length, 10);
+  const out = { ok: true, now, venue: S.venue, rules: { maxWins: RULES.maxWins, checkinSec: RULES.checkinSec }, tables, queue, leaderboard, recent: S.history.slice(0, 6), feed: S.feed.slice(-14).reverse(), events: publicEvents(S, now), directory: S.directory || [], my };
   const q = ticket ? findTicket(S, ticket) : null;
   if (q) {
     const t = tableOf(S, q), side = sideOf(t, q);
@@ -946,13 +1144,133 @@ function doUndo(S, t, now) {
 function sideByName(t, name) { const n = String(name || '').trim().toLowerCase(); return ['champ', 'challenger'].find(sd => t[sd] && t[sd].name.toLowerCase() === n) || null; }
 const STAFF_ACTIONS = ['start_match', 'switch_turn', 'foul', 'set_group', 'end_match', 'next_match', 'undo', 'reset_table'];
 
+// ---- Bar profile and events (the "Bar setup" screen) ----
+// The profile lives in S.venue, so the bar's name shows on every screen and in the emails. Older saved states
+// (before profiles existed) get the defaults the first time they are read, and nothing else about them changes.
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const EVENT_KINDS = ['tournament', 'league', 'social', 'lesson'];
+const str = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
+const hhmm = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || '')) ? String(v) : '';
+const isoDay = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '';
+function venueProfile(v, tableCount) {
+  v = v || {};
+  const hours = {};
+  DAYS.forEach(d => { const h = (v.hours || {})[d] || {}; hours[d] = { open: hhmm(h.open) || '16:00', close: hhmm(h.close) || (d === 'fri' || d === 'sat' ? '02:00' : '00:00'), closed: !!h.closed }; });
+  const n = Math.round(Number(v.tableCount));
+  return Object.assign({}, v, {
+    name: str(v.name, 40) || 'Loopool', note: str(v.note, 80),
+    address: str(v.address, 120), mapsUrl: /^https:\/\//.test(String(v.mapsUrl || '')) ? str(v.mapsUrl, 300) : '',
+    phone: str(v.phone, 30), website: /^https:\/\//.test(String(v.website || '')) ? str(v.website, 200) : '',
+    about: str(v.about, 280), hours,
+    tableCount: n >= 1 && n <= 40 ? n : (tableCount || 4), tableBrand: str(v.tableBrand, 40), tableSize: str(v.tableSize, 20),
+    cues: Math.max(0, Math.min(200, Math.round(Number(v.cues) || 0))),
+    lat: Math.abs(Number(v.lat)) <= 90 && v.lat !== '' && v.lat != null ? Number(v.lat) : null, lng: Math.abs(Number(v.lng)) <= 180 && v.lng !== '' && v.lng != null ? Number(v.lng) : null,
+    open: v.open !== false, openedAt: v.openedAt || null, eventId: v.open !== false && v.eventId ? String(v.eventId) : null,
+    setup: !!v.setup,
+  });
+}
+function seedEvents(now) {
+  const day = n => new Date(now + n * 86400000).toISOString().slice(0, 10);
+  return [
+    { id: 'e1', title: 'Tuesday 8-ball tournament', kind: 'tournament', date: day(2), time: '19:00', gameType: '8-ball', cap: 16, fee: '$10', prize: 'Bar tab for the winner', about: 'Single elimination, races to 3. Every game on Table 1 is rated by the camera referee.', players: [{ name: 'Sam', at: now }, { name: 'Ana', at: now }, { name: 'Noor', at: now }] },
+    { id: 'e2', title: 'Women and non-binary pool night', kind: 'social', date: day(4), time: '18:00', gameType: '8-ball', cap: 0, fee: 'Free', prize: '', about: 'Tables held for women and non-binary players. Beginners welcome, cues and coaching tips on hand.', players: [{ name: 'Priya', at: now }] },
+  ];
+}
+// Other bars on Loopool, for the player's Bars tab. In this single-venue version they are example listings
+// (profile and events only); a shared database (n8n Data Tables) would make every signed-up bar appear here.
+function seedDirectory(now) {
+  const day = n => new Date(now + n * 86400000).toISOString().slice(0, 10);
+  const H = (o, c, late) => { const h = {}; DAYS.forEach(d => { h[d] = { open: o, close: (d === 'fri' || d === 'sat') && late ? late : c, closed: false }; }); return h; };
+  return [
+    { id: 'b_cue', name: 'The Cue Club', address: '1001 Granville St, Vancouver', about: 'Nine 9-ft Diamond tables and a weekly 9-ball league.', hours: H('12:00', '01:00', '02:00'), tableCount: 9, tableBrand: 'Diamond', tableSize: '9 ft', cues: 30, example: true, lat: 49.2786, lng: -123.1253,
+      events: [{ id: 'x1', title: 'Thursday 9-ball league', kind: 'league', date: day(3), time: '19:30', gameType: '9-ball', fee: '$15', count: 11, cap: 24 }] },
+    { id: 'b_rack', name: 'Bank Shot Bar', address: '2150 Commercial Dr, Vancouver', about: 'Neighbourhood bar with three tables and a friendly beginners night.', hours: H('16:00', '00:00', '01:00'), tableCount: 3, tableBrand: 'Valley', tableSize: '7 ft', cues: 10, example: true, lat: 49.2658, lng: -123.0697,
+      events: [{ id: 'x2', title: 'Beginners night', kind: 'lesson', date: day(1), time: '18:00', gameType: '8-ball', fee: 'Free', count: 5, cap: 0 }] },
+    { id: 'b_side', name: 'Side Pocket Lounge', address: '480 Main St, Vancouver', about: 'Late-night pool and a monthly 8-ball tournament.', hours: H('17:00', '02:00'), tableCount: 6, tableBrand: 'Brunswick', tableSize: '8 ft', cues: 18, example: true, lat: 49.2799, lng: -123.1003, events: [] },
+  ];
+}
+function cleanEvent(e, old) {
+  const cap = Math.round(Number(e.cap));
+  return { id: old ? old.id : '', title: str(e.title, 60), kind: EVENT_KINDS.includes(e.kind) ? e.kind : 'tournament', date: isoDay(e.date), time: hhmm(e.time) || '19:00',
+    gameType: RULES.games.includes(e.gameType) ? e.gameType : '8-ball', cap: cap > 0 && cap <= 256 ? cap : 0, fee: str(e.fee, 30), prize: str(e.prize, 60), about: str(e.about, 280), players: old ? old.players : [] };
+}
+function readJSON(v) { if (v && typeof v === 'object') return v; try { return JSON.parse(String(v || '')); } catch (e) { return null; } }
+// Venue and event actions. Returns an error message, or '' when it worked.
+function venueAction(S, action, p, now) {
+  if (action === 'venue_save') {
+    const v = readJSON(p.profile); if (!v) return 'The profile is missing.';
+    if (!str(v.name, 40)) return 'Give the bar a name.';
+    if (v.mapsUrl && !/^https:\/\//.test(String(v.mapsUrl))) return 'The Google Maps link should start with https://';
+    if (v.website && !/^https:\/\//.test(String(v.website))) return 'The website link should start with https://';
+    const first = !S.venue.setup;
+    S.venue = venueProfile(Object.assign({}, S.venue, v, { open: S.venue.open, openedAt: S.venue.openedAt, eventId: S.venue.eventId, setup: true }), S.tables.length);
+    log(S, now, 'venue', first ? S.venue.name + ' is set up on Loopool' : 'The bar profile was updated');
+    return '';
+  }
+  if (action === 'venue_open') {
+    const open = p.open === true || p.open === '1' || p.open === 'true';
+    const ev = open && p.event ? S.events.find(x => x.id === String(p.event)) : null;
+    if (open && p.event && !ev) return 'That event no longer exists.';
+    S.venue.open = open; S.venue.openedAt = open ? now : null; S.venue.eventId = ev ? ev.id : null;
+    log(S, now, 'venue', open ? (ev ? ev.title + ' has started at ' + S.venue.name : S.venue.name + ' started tonight\u2019s session') : S.venue.name + ' ended the session');
+    return '';
+  }
+  if (action === 'venue_delete') {
+    S.venue = venueProfile({ name: 'New bar', open: false, setup: false }, S.tables.length);
+    S.events = [];
+    log(S, now, 'venue', 'The bar profile was deleted');
+    return '';
+  }
+  if (action === 'event_save') {
+    const e = readJSON(p.event); if (!e) return 'The event is missing.';
+    const old = e.id ? S.events.find(x => x.id === e.id) : null;
+    if (e.id && !old) return 'That event no longer exists.';
+    const ev = cleanEvent(e, old);
+    if (!ev.title) return 'Give the event a name.';
+    if (!ev.date) return 'Pick a date for the event.';
+    if (old) Object.assign(old, ev);
+    else { S.eventSeq = (S.eventSeq || 100) + 1; ev.id = 'e' + S.eventSeq; S.events.push(ev); if (S.events.length > 40) S.events.shift(); }
+    log(S, now, 'venue', (old ? 'Event updated: ' : 'New event: ') + ev.title);
+    return '';
+  }
+  const ev = S.events.find(x => x.id === String(p.id || ''));
+  if (!ev) return 'That event no longer exists.';
+  if (action === 'event_remove') { S.events = S.events.filter(x => x !== ev); log(S, now, 'venue', 'Event cancelled: ' + ev.title); return ''; }
+  const q = p.ticket ? findTicket(S, p.ticket) : null;
+  const name = str(p.name, 24) || (q ? q.name : '');
+  if (!name) return 'Please enter your name.';
+  const mine = x => x.name.toLowerCase() === name.toLowerCase();
+  if (action === 'event_join') {
+    if (ev.players.some(mine)) return name + ' is already signed up.';
+    if (ev.cap && ev.players.length >= ev.cap) return ev.title + ' is full.';
+    ev.players.push({ name, at: now });
+    log(S, now, 'venue', name + ' signed up for ' + ev.title);
+    return '';
+  }
+  if (action === 'event_leave') {
+    if (!ev.players.some(mine)) return name + ' isn\'t signed up.';
+    ev.players = ev.players.filter(x => !mine(x));
+    log(S, now, 'venue', name + ' dropped out of ' + ev.title);
+    return '';
+  }
+  return 'Unknown action: ' + action;
+}
+function publicEvents(S, now) {
+  const from = new Date(now - 86400000).toISOString().slice(0, 10);   // today and later (a day of slack for time zones)
+  return S.events.filter(e => e.date >= from).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+    .map(e => ({ id: e.id, live: !!(S.venue.open && S.venue.eventId === e.id), title: e.title, kind: e.kind, date: e.date, time: e.time, gameType: e.gameType, cap: e.cap, fee: e.fee, prize: e.prize, about: e.about, count: e.players.length, names: e.players.map(x => x.name).slice(0, 64) }));
+}
+
 // One entry point for every request. Returns the new state, the response for the app, texts to send and a finished-game summary.
 function handle(S, action, p, realNow) {
   const notes = [];
   const now = () => realNow + (S.skew || 0);
-  const fail = (msg, code) => ({ S, response: Object.assign(publicState(S, now(), p.ticket), { ok: false, error: msg, code: code || 400 }), notify: notes, finished: null });
+  const fail = (msg, code) => ({ S, response: Object.assign(publicState(S, now(), p.ticket, p.player), { ok: false, error: msg, code: code || 400 }), notify: notes, finished: null });
   const finBefore = S.finished || 0;
   if (p.base) S.base = String(p.base).slice(0, 200);
+  if (!S.venue || !S.venue.hours) S.venue = venueProfile(S.venue, S.tables.length);   // saved before bar profiles existed
+  if (!Array.isArray(S.events)) S.events = [];
+  if (!S.accounts || typeof S.accounts !== 'object') S.accounts = {};
   if (p.k != null && p.k !== '') { const kq = p.ticket ? findTicket(S, p.ticket) : null; if (!kq || !kq.key || kq.key !== String(p.k)) return fail('This link doesn\'t match a ticket.', 403); }
   if (p.cams) {                                          // a camera page says which tables it is watching (before settle, so a game starting now is refereed)
     String(p.cams).toUpperCase().split(',').slice(0, 20).forEach(id => {
@@ -962,6 +1280,7 @@ function handle(S, action, p, realNow) {
   }
   settle(S, now(), notes);
   const q = p.ticket ? findTicket(S, p.ticket) : null;
+  let extra = null;
   switch (action) {
     case 'state': break;
     case 'join': {
@@ -969,12 +1288,22 @@ function handle(S, action, p, realNow) {
       if (!name) return fail('Please enter your name.');
       const gameType = RULES.games.includes(p.gameType) ? p.gameType : '8-ball';
       const refOnly = (p.refOnly === true || p.refOnly === 'true' || p.refOnly === '1') && gameType === '8-ball';
-      let pid = Object.keys(S.players).find(k => S.players[k].name.toLowerCase() === name.toLowerCase());
-      if (pid && S.queue.some(x => x.pid === pid && ['waiting', 'called', 'playing'].includes(x.status))) return fail(name + ' is already in the queue or at a table.');
-      if (!pid) { pid = 'p_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '') + '_' + (S.seq + 1); S.players[pid] = { name, rating: RULES.startRating, w: 0, l: 0 }; }
       const em = String(p.email || '').trim().slice(0, 80);
       const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em) ? em : '';
       if (em && !email) return fail('That email address doesn\'t look right.');
+      const acct = email && S.accounts[email.toLowerCase()];
+      if (acct && String(p.hash || '') !== acct.hash) return fail('There\'s an account for ' + email + '. Log in to join the queue.', 401);
+      let pid = Object.keys(S.players).find(k => S.players[k].name.toLowerCase() === name.toLowerCase());
+      // Already on the board or at a table under this name: if it's the same person (same ticket or same email),
+      // hand their ticket back instead of refusing, so a lost page or a second tap never locks them out.
+      const active = pid ? S.queue.find(x => x.pid === pid && ['waiting', 'called', 'playing'].includes(x.status)) : null;
+      if (active) {
+        const same = (p.ticket && p.ticket === active.ticket) || (email && active.email && active.email.toLowerCase() === email.toLowerCase());
+        if (!same) return fail(name + ' is already on the board. Use a different name, or the email you joined with.');
+        p.ticket = active.ticket;
+        break;
+      }
+      if (!pid) { pid = 'p_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '') + '_' + (S.seq + 1); S.players[pid] = { name, rating: RULES.startRating, w: 0, l: 0 }; }
       const ticket = 'A' + (++S.seq);
       const key = Math.random().toString(36).slice(2, 10);
       S.queue.push({ ticket, pid, name, email, key, gameType, refOnly, real: true, status: 'waiting', joinedAt: now() });
@@ -1091,6 +1420,29 @@ function handle(S, action, p, realNow) {
       break;
     }
     case 'reset': break;
+    case 'account_create': case 'account_login': {
+      // Player accounts: made after a player's first game. The phone sends a SHA-256 of the password (salted with the
+      // email), never the password itself. Fine for a hackathon; a real launch would use a proper login service.
+      const email = String(p.email || '').trim().toLowerCase(), hash = String(p.hash || '');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Enter the email you play with.');
+      if (!/^[a-f0-9]{16,64}$/.test(hash)) return fail('Choose a password of at least 6 characters.');
+      const a = S.accounts[email];
+      if (action === 'account_create') {
+        const name = String(p.name || '').trim().slice(0, 24);
+        if (!name) return fail('Please enter your name.');
+        if (a) return fail('There\'s already an account for this email. Log in instead.', 409);
+        S.accounts[email] = { name, email, hash, at: now() };
+        extra = { account: { name, email } };
+      } else {
+        if (!a || a.hash !== hash) return fail('That email and password don\'t match.', 401);
+        extra = { account: { name: a.name, email: a.email } };
+      }
+      break;
+    }
+    case 'venue_save': case 'venue_open': case 'venue_delete': case 'event_save': case 'event_remove': case 'event_join': case 'event_leave': {
+      const err = venueAction(S, action, p, now()); if (err) return fail(err);
+      break;
+    }
     default: {
       if (!STAFF_ACTIONS.includes(action)) return fail('Unknown action: ' + action);
       const t = S.tables.find(x => x.id === String(p.table || 'T1').toUpperCase());
@@ -1149,7 +1501,7 @@ function handle(S, action, p, realNow) {
   }
   const nFin = (S.finished || 0) - finBefore;
   const finished = nFin > 0 ? S.history.slice(0, nFin) : null;
-  return { S, response: publicState(S, now(), p.ticket), notify: notes, finished };
+  return { S, response: Object.assign(publicState(S, now(), p.ticket, p.player), extra || {}), notify: notes, finished };
 }
 
 // ===== Demo "camera service": builds the shot events a real vision system would send to n8n. =====
@@ -1690,6 +2042,7 @@ function buildScript() {
       renderNow,
       refresh: renderConn,
       running: () => running,
+      stop: () => stopAll(),
       show(on) { unit.hidden = !on; if (on) requestAnimationFrame(() => draw()); },
       destroy() { destroyed = true; stopAll(); window.removeEventListener('resize', onResize); unit.remove(); },
     };
@@ -1706,7 +2059,7 @@ function buildScript() {
     el.innerHTML = `
 <div class="cam-view">
   <div class="cam-top"><h2 class="cam-sign">Table camera</h2>
-    <div class="cam-brand"><a href="#presenter">All screens</a><span>${SHIELD}LOOPOOL</span></div></div>
+    <div class="cam-brand">${opts.back ? `<a href="${esc(opts.back.href)}">${esc(opts.back.label)}</a>` : ''}<span>${SHIELD}LOOPOOL</span></div></div>
   <div class="cam-tabs" role="tablist" aria-label="Tables on this camera page">
     <span data-r="tabs" style="display:contents"></span>
     <div class="cam-add" data-r="addRow"><select data-r="addSel" aria-label="Table to add"></select><button class="cam-b" data-r="addBtn" title="Watch another table from this device, for example with a second webcam">Add table</button></div>
@@ -1804,12 +2157,781 @@ function buildScript() {
 
     return {
       addTable: id => addTable(id, true),
+      running: () => [...units.values()].filter(u => u.running()).map(u => u.id),   // tables whose camera is on (bar app)
+      stopAll() { units.forEach(u => { if (u.running()) u.stop(); }); },              // the bar ended the session
       destroy() { destroyed = true; clearInterval(pollTimer); units.forEach(u => u.destroy()); units.clear(); el.innerHTML = ''; },
     };
   }
 
   window.CameraView = { mount };
 })();
+
+// ===== The bar app (#bar) =====
+// Flow: register the bar once (auto-filled from its website or Google Maps link, read by n8n) -> the bar's home page
+// (its name and key facts, events, Start a game) -> start a game by hand, or with the camera -> camera set-up ->
+// the bar TV view (stays on until staff press Exit) -> back to the home page. The profile menu edits the bar
+// (with everything already filled in), switches to the player app, or deletes the bar.
+// The profile, sessions and events are saved by the same Referee engine as the queue (venue_save, venue_open,
+// venue_delete, event_*), so in live mode n8n stores them and every screen sees them.
+// This file only uses the page helpers ($, esc, act, toast, S) inside functions, so it can load before app.js.
+var BIZ = { dirty: false, editId: null, sig: {} };
+var BAPP = { screen: 'home', camFrom: 'start', editing: false, cam: null, lastOpen: null, formOpen: false, sig: {} };
+var BIZ_DAYS = [['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'], ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']];
+var BIZ_KINDS = { tournament: 'Tournament', league: 'League night', social: 'Social night', lesson: 'Lesson or coaching' };
+
+function bizTime(t) {                                        // "19:30" -> "7:30 PM"
+  const m = /^(\d\d):(\d\d)$/.exec(t || ''); if (!m) return '';
+  const h = Number(m[1]), ap = h < 12 ? 'AM' : 'PM', h12 = h % 12 || 12;
+  return h12 + (m[2] === '00' ? '' : ':' + m[2]) + ' ' + ap;
+}
+function bizDay(iso) {                                       // "2026-11-17" -> "Tue 17 Nov"
+  const d = new Date(iso + 'T12:00:00'); if (isNaN(d)) return iso;
+  return d.toLocaleDateString('en-CA', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '').replace(',', '');
+}
+function bizToday(v, now) {                                  // "Open today 4 PM – 2 AM" from the weekly hours
+  if (!v || !v.hours) return '';
+  const h = v.hours[BIZ_DAYS[(new Date(now).getDay() + 6) % 7][0]];
+  if (!h) return '';
+  return h.closed ? 'Closed today' : 'Open today ' + bizTime(h.open) + ' – ' + bizTime(h.close);
+}
+function bizSig(st) { return JSON.stringify([st.venue, st.events]); }
+
+// ---------- set up (first time) or edit the profile ----------
+function renderSetup(el, st) {
+  const mode = st.venue.setup ? 'edit' : 'new';
+  if (el.dataset.mode !== mode) { el.dataset.mode = mode; el.innerHTML = setupHTML(mode); bindSetup(el); BIZ.dirty = false; BIZ.sig.profile = null; }
+  const prof = JSON.stringify(st.venue);
+  if (!BIZ.dirty && BIZ.sig.profile !== prof) { BIZ.sig.profile = prof; bizFillProfile(el, mode === 'new' ? Object.assign({}, st.venue, { name: '' }) : st.venue, st); }
+}
+function setupHTML(mode) {
+  const hours = BIZ_DAYS.map(([d, name]) => `<div class="biz-hr"><span>${name}</span>
+      <input type="time" name="h-${d}-open" aria-label="${name} opens"><span class="dim">to</span><input type="time" name="h-${d}-close" aria-label="${name} closes">
+      <label class="biz-chk"><input type="checkbox" name="h-${d}-closed"> Closed</label></div>`).join('');
+  return `<div class="bsetup biz">
+    ${backBtn(mode === 'new' ? 'biz-tostart' : 'biz-editcancel', mode === 'new' ? 'Back' : 'Back to ' + ((S.state && S.state.venue.name) || 'your bar'))}
+    <div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">${mode === 'new' ? 'Register your bar' : 'Edit your bar profile'}</h1>
+      <p class="lede">${mode === 'new' ? 'You do this once. Players see it when they look your bar up.' : 'Changes show on players’ phones right away.'}</p></div>
+    <section class="biz-card autofill">
+      <div class="biz-hd"><span class="sign">Fill it in for me</span></div>
+      <p class="dim" style="font-size:14px">Paste your bar’s Google Maps link or website. We read the page and fill in what we find: name, address, phone, hours, tables. Check it before you save.</p>
+      <div class="biz-row"><input id="afUrl" type="url" placeholder="https://maps.app.goo.gl/… or https://yourbar.com" aria-label="Google Maps or website link" style="flex:1;min-width:220px"><button class="b go" type="button" data-act="biz-autofill" id="afBtn">Fill in for me</button></div>
+      <p class="dim" id="afStatus" role="status" style="font-size:13.5px">In Google Maps: find your bar, tap Share, copy the link.</p>
+    </section>
+    <form class="biz-card biz-form" id="bizProfile" autocomplete="off">
+      <input type="hidden" name="lat"><input type="hidden" name="lng">
+      <div class="biz-f wide"><label for="bpName">Bar name</label><input id="bpName" name="name" maxlength="40" required></div>
+      <div class="biz-f wide"><label for="bpAbout">About <span class="dim">(optional)</span></label><textarea id="bpAbout" name="about" maxlength="280" rows="2" placeholder="What makes your tables worth the trip"></textarea></div>
+      <div class="biz-f wide"><label for="bpAddr">Address</label><input id="bpAddr" name="address" maxlength="120" placeholder="123 Main St, Vancouver"></div>
+      <div class="biz-f wide"><label for="bpMaps">Google Maps link</label><input id="bpMaps" name="mapsUrl" type="url" maxlength="300" placeholder="https://maps.app.goo.gl/…"><small>Players tap it for directions. <a href="#" data-act="biz-testmaps">Check the link</a></small></div>
+      <div class="biz-f"><label for="bpPhone">Phone <span class="dim">(optional)</span></label><input id="bpPhone" name="phone" type="tel" maxlength="30"></div>
+      <div class="biz-f"><label for="bpWeb">Website <span class="dim">(optional)</span></label><input id="bpWeb" name="website" type="url" maxlength="200" placeholder="https://"></div>
+      <span class="label wide" style="margin-top:6px">Tables and gear</span>
+      <div class="biz-f"><label for="bpTables">Pool tables</label><input id="bpTables" name="tableCount" type="number" min="1" max="40"><small data-biz-tablenote></small></div>
+      <div class="biz-f"><label for="bpBrand">Table brand</label><input id="bpBrand" name="tableBrand" maxlength="40" list="bizBrands" placeholder="Diamond"><datalist id="bizBrands"><option>Diamond</option><option>Brunswick</option><option>Olhausen</option><option>Valley</option><option>Predator</option><option>Rasson</option></datalist></div>
+      <div class="biz-f"><label for="bpSize">Table size</label><select id="bpSize" name="tableSize"><option value="">Not set</option><option>7 ft</option><option>8 ft</option><option>9 ft</option></select></div>
+      <div class="biz-f"><label for="bpCues">House cues</label><input id="bpCues" name="cues" type="number" min="0" max="200"></div>
+      <span class="label wide" style="margin-top:6px">Opening hours</span>
+      <div class="biz-hours wide">${hours}</div>
+      <div class="biz-row wide"><button class="b go big" type="submit">${mode === 'new' ? 'Save and continue' : 'Save changes'}</button>${mode === 'edit' ? '<button class="b big" type="button" data-act="biz-editcancel">Cancel</button>' : ''}<span class="dim" data-biz-saved role="status"></span></div>
+    </form>
+  </div>`;
+}
+function bizFillProfile(el, v, st) {
+  const f = $('#bizProfile', el); if (!f) return;
+  ['name', 'about', 'address', 'mapsUrl', 'phone', 'website', 'tableCount', 'tableBrand', 'tableSize', 'cues', 'lat', 'lng'].forEach(k => { if (f.elements[k]) f.elements[k].value = v[k] == null || (k === 'cues' && !v[k]) ? '' : v[k]; });
+  BIZ_DAYS.forEach(([d]) => { const h = (v.hours || {})[d] || {}; f.elements['h-' + d + '-open'].value = h.open || ''; f.elements['h-' + d + '-close'].value = h.close || ''; f.elements['h-' + d + '-closed'].checked = !!h.closed; });
+  const note = $('[data-biz-tablenote]', el); if (note) note.textContent = 'The queue runs ' + st.tables.length + ' tables right now.';
+}
+function bizReadProfile(f) {
+  const v = {};
+  ['name', 'about', 'address', 'mapsUrl', 'phone', 'website', 'tableBrand', 'tableSize'].forEach(k => { v[k] = f.elements[k].value.trim(); });
+  v.tableCount = Number(f.elements.tableCount.value) || 0; v.cues = Number(f.elements.cues.value) || 0;
+  const g = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(v.mapsUrl) || /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(v.mapsUrl);   // map pin, for distances
+  if (g) { v.lat = Number(g[1]); v.lng = Number(g[2]); } else if (f.elements.lat.value) { v.lat = Number(f.elements.lat.value); v.lng = Number(f.elements.lng.value); }
+  v.hours = {}; BIZ_DAYS.forEach(([d]) => { v.hours[d] = { open: f.elements['h-' + d + '-open'].value, close: f.elements['h-' + d + '-close'].value, closed: f.elements['h-' + d + '-closed'].checked }; });
+  return v;
+}
+function bindSetup(el) {
+  const pf = $('#bizProfile', el);
+  pf.addEventListener('input', () => { BIZ.dirty = true; $('[data-biz-saved]', el).textContent = 'Unsaved changes'; });
+  pf.addEventListener('submit', async e => {
+    e.preventDefault();
+    const v = bizReadProfile(pf), first = !(S.state && S.state.venue.setup);
+    if (!v.name) return toast('Give the bar a name.');
+    if (v.mapsUrl && !/^https:\/\//.test(v.mapsUrl)) return toast('The Google Maps link should start with https://');
+    if (v.website && !/^https:\/\//.test(v.website)) return toast('The website link should start with https://');
+    const r = await act('venue_save', { profile: v });
+    if (r && r.ok) { BIZ.dirty = false; BAPP.editing = false; BAPP.screen = 'home'; BAPP.sig = {}; toast(first ? 'Your bar is registered. Start a game when you open.' : 'Profile saved.'); render(); window.scrollTo(0, 0); }
+  });
+}
+// Auto-fill: n8n opens the link and reads the page (see "Bar profile auto-fill" in the workflow). The demo page has
+// no n8n behind it, so it fills in an example to show the idea.
+async function bizAutofill() {
+  const url = $('#afUrl').value.trim(), st = $('#afStatus'), btn = $('#afBtn');
+  if (!url) return toast('Paste your Google Maps or website link first.');
+  btn.disabled = true; st.textContent = 'Reading your page… this takes about 10 seconds.';
+  let res;
+  try {
+    if (S.mode === 'live') { const r = await fetch(S.base.replace(/\/+$/, '') + '/pool-lookup?url=' + encodeURIComponent(url), { cache: 'no-store' }); res = await r.json(); }
+    else {
+      await new Promise(r => setTimeout(r, 900));
+      const H = {}; BIZ_DAYS.forEach(([d]) => { H[d] = { open: d === 'sat' || d === 'sun' ? '12:00' : '16:00', close: d === 'fri' || d === 'sat' ? '02:00' : '00:00', closed: d === 'mon' }; });
+      res = { ok: true, demo: true, profile: Object.assign({ name: 'The Corner Pocket', about: 'Six tables, cheap pints and a camera referee on Table 1.', address: '12 Water St, Vancouver, BC', phone: '+1 604-555-0199', tableCount: 6, tableBrand: 'Diamond', tableSize: '8 ft', cues: 20, hours: H, lat: 49.2843, lng: -123.1086 }, /maps|goo\.gl/.test(url) ? { mapsUrl: url } : { website: /^https:\/\//.test(url) ? url : '' }) };
+    }
+  } catch (e) { res = { ok: false, error: 'Couldn’t reach n8n to read the page. Fill the profile in yourself.' }; }
+  btn.disabled = false;
+  if (!res || !res.ok) { st.textContent = (res && res.error) || 'We couldn’t read that page. Fill the profile in yourself.'; return; }
+  const f = $('#bizProfile'), p = res.profile || {}; let n = 0;
+  ['name', 'about', 'address', 'mapsUrl', 'phone', 'website', 'tableCount', 'tableBrand', 'tableSize', 'cues'].forEach(k => { if (p[k] != null && p[k] !== '' && f.elements[k]) { f.elements[k].value = p[k]; f.elements[k].classList.add('filled'); n++; } });
+  if (p.lat != null && p.lng != null) { f.elements.lat.value = p.lat; f.elements.lng.value = p.lng; }
+  if (p.hours) { BIZ_DAYS.forEach(([d]) => { const h = p.hours[d]; if (!h) return; f.elements['h-' + d + '-open'].value = h.open || ''; f.elements['h-' + d + '-close'].value = h.close || ''; f.elements['h-' + d + '-closed'].checked = !!h.closed; }); n++; }
+  BIZ.dirty = true;
+  st.textContent = (res.demo ? 'Demo: filled in with an example bar. Connected to n8n, it reads your real page. ' : '') + 'Filled in ' + n + ' field' + (n === 1 ? '' : 's') + '. Check them, add anything missing, then save.';
+}
+
+
+// ---------- the bar app ----------
+function renderBizApp(st) {
+  const v = st.venue || {}, root = $('#v-biz');
+  $$('[data-ico]', root).forEach(i => { if (!i.innerHTML) i.innerHTML = APP_ICONS[i.dataset.ico]; });
+  // a session ended on another device: the camera on this device stops too
+  if (BAPP.lastOpen && !v.open && BAPP.cam && BAPP.cam.running().length) { BAPP.cam.stopAll(); toast('The night was ended, so the camera on this device stopped.'); }
+  BAPP.lastOpen = !!v.open;
+  const screen = !v.setup ? 'setup' : BAPP.editing ? 'setup' : BAPP.screen;
+  const tv = screen === 'tv';
+  document.body.classList.toggle('kiosk', tv); document.body.classList.toggle('tvmode', tv); if (!tv) document.body.classList.remove('tvfull');
+  $('.bapp-top', root).hidden = screen !== 'home';
+  $('[data-bname]', root).textContent = v.name || 'Loopool';
+  $('[data-bchip]', root).innerHTML = `<span class="biz-pill${v.open ? ' on' : ''}">${v.open ? 'Open tonight' : 'Closed'}</span>`;
+  $$('[data-bs]', root).forEach(el => {
+    const on = el.dataset.bs === screen;
+    if (el.dataset.bs === 'camera' && BAPP.cam) { el.hidden = false; el.classList.toggle('offstage', !on); }   // a running camera keeps going off screen
+    else el.hidden = !on;
+  });
+  if (screen === 'setup') renderSetup($('[data-bs="setup"]', root), st);
+  else if (screen === 'home') renderBizHome(root, st);
+  else if (screen === 'start') renderStartGame($('[data-bs="start"]', root), st);
+  else if (screen === 'camera') renderCameraStep(root, st);
+  else if (tv) renderTV($('[data-bs="tv"] [data-tv]', root), st, 'biztv');
+}
+
+// The home page: the bar's name and key facts, what's happening, Start a game, events
+function renderBizHome(root, st) {
+  const v = st.venue, cams = BAPP.cam ? BAPP.cam.running() : [], ev = v.eventId && (st.events || []).find(e => e.id === v.eventId);
+  const playing = st.tables.filter(t => t.game).length;
+  const sig = JSON.stringify([v, cams, ev && ev.title, playing, st.queue.length, st.tables.map(t => t.camLive)]);
+  if (BAPP.sig.home !== sig) {
+    BAPP.sig.home = sig;
+    const today = bizToday(v, st.now);
+    const facts = [v.tableCount ? v.tableCount + ' ' + (v.tableBrand ? v.tableBrand + ' ' : '') + 'tables' + (v.tableSize ? ' (' + v.tableSize + ')' : '') : '', v.cues ? v.cues + ' house cues' : ''].filter(Boolean).join(' · ');
+    $('[data-bhome]', root).innerHTML = `<section class="bhome">
+      <div class="bhome-info"><p class="lede">${esc([today, v.address].filter(Boolean).join(' · '))}</p>${facts ? `<p class="lede" style="font-size:14px">${esc(facts)}</p>` : ''}${v.about ? `<p style="font-size:15px;max-width:640px">${esc(v.about)}</p>` : ''}</div>
+      <div class="bhome-now">
+        <div class="stats three"><div class="stat"><b>${playing}/${st.tables.length}</b><span>tables in play</span></div><div class="stat"><b>${st.queue.length}</b><span>in the queue</span></div><div class="stat"><b>${cams.length || st.tables.filter(t => t.camLive).length}</b><span>camera${(cams.length || st.tables.filter(t => t.camLive).length) === 1 ? '' : 's'} on</span></div></div>
+        ${ev ? `<p class="lede">Tonight: <b style="color:var(--chalk)">${esc(ev.title)}</b></p>` : ''}
+        <div class="biz-row"><button class="b go big" data-act="biz-start">Start a game</button>
+          <button class="b big" data-act="biz-totv">${cams.length ? 'Back to the bar TV' : 'Open the bar TV'}</button>
+          ${cams.length ? '<button class="b big" data-act="biz-stopcam">Stop the camera</button>' : ''}
+          ${v.open ? '<button class="b big danger" data-act="biz-end">End the night</button>' : ''}</div>
+      </div></section>`;
+  }
+  renderVenue($('[data-bs="home"] [data-venue]', root), st);   // every table in the session, the queue board, results
+  renderStaff(st);
+  renderBizEvents($('[data-bevents]', root), st);
+}
+
+// Start a game: with the camera referee, by hand, or call the next names from the queue
+function renderStartGame(el, st) {
+  const ev = BAPP.event && (st.events || []).find(e => e.id === BAPP.event);
+  const sig = JSON.stringify([BAPP.event, ev && ev.title, st.tables.map(t => [t.id, t.name, !!t.game, t.champ && t.champ.name, t.challenger && t.challenger.name]), st.queue.length]);
+  if (BAPP.sig.start === sig) return; BAPP.sig.start = sig;
+  const tableOpts = st.tables.map(t => `<option value="${t.id}">${esc(t.name)}${t.ref ? ' (camera, rated)' : ''}${t.game ? ' · in play' : ''}</option>`).join('');
+  el.innerHTML = `<div class="bstart biz">
+    ${backBtn('biz-home', 'Back')}
+    <div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">${ev ? 'Start ' + esc(ev.title) : 'Start a game'}</h1><p class="lede">Pick how this game is run.</p></div>
+    <section class="biz-card pick">
+      <div class="biz-hd"><span class="sign">With the camera referee</span></div>
+      <p class="dim">Set up the camera over the table. It scores every shot, calls fouls and shows the game on the bar TV. Games on Table 1 are rated.</p>
+      <div class="biz-row"><button class="b go big" data-act="biz-tocam">Set up the camera</button></div>
+    </section>
+    <section class="biz-card pick">
+      <div class="biz-hd"><span class="sign">Enter the players by hand</span></div>
+      <form class="biz-form" id="handForm" autocomplete="off">
+        <div class="biz-f"><label for="hTable">Table</label><select id="hTable">${tableOpts}</select></div>
+        <div class="biz-f"><label for="hGame">Game</label><select id="hGame"><option value="8">8-ball</option><option value="9">9-ball</option><option value="10">10-ball</option></select></div>
+        <div class="biz-f"><label for="hP1">Player who breaks</label><input id="hP1" maxlength="24" placeholder="Name"></div>
+        <div class="biz-f"><label for="hP2">Opponent</label><input id="hP2" maxlength="24" placeholder="Name"></div>
+        <div class="biz-row wide"><button class="b go big" type="submit">Start the game</button></div>
+      </form>
+    </section>
+    <section class="biz-card pick">
+      <div class="biz-hd"><span class="sign">Next names in the queue</span><span class="dim">${st.queue.length} waiting</span></div>
+      <div class="biz-row"><select id="qTable" aria-label="Table">${tableOpts}</select><button class="b big" data-act="biz-callnext"${st.queue.length ? '' : ' disabled'}>Call them to the table</button></div>
+    </section>
+  </div>`;
+  $('#handForm', el).addEventListener('submit', async e => {
+    e.preventDefault();
+    const table = $('#hTable').value, p1 = $('#hP1').value.trim(), p2 = $('#hP2').value.trim();
+    if (!p1 || !p2) return toast('Type both player names.');
+    const t = st.tables.find(x => x.id === table), params = { table, players: p1 + ',' + p2, gameType: $('#hGame').value };
+    if (t && t.game) { if (!await askConfirm({ title: 'Replace the game on ' + t.name + '?', text: 'A game is being played there. Starting ' + p1 + ' vs ' + p2 + ' ends it with no winner.', yes: 'Start the new game', no: 'Keep it' })) return; params.force = '1'; }
+    const r = await act('start_match', params); if (!r || !r.ok) return;
+    await openNight(); BAPP.screen = 'home'; BAPP.event = null; BAPP.sig = {}; toast(p1 + ' vs ' + p2 + ' started on ' + (t ? t.name : table) + '.'); render(); window.scrollTo(0, 0);
+  });
+}
+async function openNight() { const v = S.state && S.state.venue; if (v && !v.open) await act('venue_open', { open: '1', event: BAPP.event || undefined }, true); }
+
+// The camera step: set it up, then the bar TV
+function renderCameraStep(root, st) {
+  const el = $('[data-camera]', root);
+  if (!BAPP.cam && window.CameraView) BAPP.cam = window.CameraView.mount(el, { base: S.mode === 'live' ? S.base : '', table: 'T1', tables: () => ((S.state && S.state.tables) || []).map(t => ({ id: t.id, name: t.name, ref: t.ref })) });
+  const sig = JSON.stringify([BAPP.camFrom]);
+  if (BAPP.sig.camhd === sig) return; BAPP.sig.camhd = sig;
+  $('[data-camhd]', root).innerHTML = `${backBtn('biz-camback', 'Back')}
+    <div><h1 class="h1">Set up the camera</h1>
+      <p class="lede">Mount this phone or webcam above the table, looking straight down, then press <b>Start</b> under the picture and keep the table still for 3 seconds.</p></div>
+    <div class="biz-row"><button class="b go big" data-act="biz-camdone">The camera is on: show the bar TV</button></div>`;
+}
+
+// ---------- buttons ----------
+document.addEventListener('click', async e => {
+  const menu = $('[data-bmenu]');
+  if (menu && !menu.hidden && !e.target.closest('.bapp-menu')) { menu.hidden = true; $('[data-act="bmenu"]').setAttribute('aria-expanded', 'false'); }
+  const a = e.target.closest('[data-act]'); if (!a || a.disabled) return;
+  const x = a.dataset.act;
+  const go = screen => { BAPP.screen = screen; BAPP.sig = {}; S.sigs.clear(); render(); window.scrollTo(0, 0); };
+  if (x === 'bmenu') { menu.hidden = !menu.hidden; a.setAttribute('aria-expanded', String(!menu.hidden)); return; }
+  if (x.startsWith('bm-')) {
+    menu.hidden = true;
+    if (x === 'bm-edit') { BAPP.editing = true; BIZ.dirty = false; const el = $('[data-bs="setup"]'); el.dataset.mode = ''; render(); window.scrollTo(0, 0); }
+    else if (x === 'bm-player') goRole('player');
+    else if (x === 'bm-delete') {
+      const v = S.state.venue;
+      if (!await askConfirm({ title: 'Delete ' + v.name + '?', text: 'Your bar profile and all your events are deleted and players can no longer find you. The leaderboard and past games stay. This can’t be undone.', yes: 'Delete business', no: 'Keep it' })) return;
+      if (BAPP.cam) BAPP.cam.stopAll();
+      const r = await act('venue_delete'); if (r && r.ok) { BAPP.editing = false; BAPP.screen = 'home'; $('[data-bs="setup"]').dataset.mode = ''; toast('Business deleted.'); render(); }
+    }
+    return;
+  }
+  if (!x.startsWith('biz-')) return;
+  const y = x.slice(4);
+  if (y === 'autofill') bizAutofill();
+  else if (y === 'tostart') { store.set('role', null); if (location.hash) location.hash = ''; else route(); }
+  else if (y === 'editcancel') { BAPP.editing = false; BIZ.dirty = false; go('home'); }
+  else if (y === 'testmaps') { e.preventDefault(); const u = $('#bpMaps').value.trim(); if (/^https:\/\//.test(u)) window.open(u, '_blank', 'noopener'); else toast('Paste a link that starts with https:// first.'); }
+  else if (y === 'home') { BAPP.event = null; go('home'); }
+  else if (y === 'start') { BAPP.event = null; go('start'); }
+  else if (y === 'evstart') { BAPP.event = a.dataset.ev; go('start'); }
+  else if (y === 'tocam') { BAPP.camFrom = 'start'; go('camera'); }
+  else if (y === 'camback') go(BAPP.camFrom === 'home' ? 'home' : 'start');
+  else if (y === 'camdone') {
+    if (BAPP.cam && !BAPP.cam.running().length && !await askConfirm({ title: 'The camera isn’t on yet', text: 'Press Start under the camera picture first. You can still open the bar TV without a camera: it shows the queue and the leaderboard.', yes: 'Open the bar TV anyway', no: 'Go back' })) return;
+    await openNight(); BAPP.event = null; go('tv');
+  }
+  else if (y === 'totv') go('tv');
+  else if (y === 'tvexit') go('home');
+  else if (y === 'stopcam') { if (BAPP.cam) BAPP.cam.stopAll(); BAPP.sig = {}; toast('Camera stopped. Games go on without the camera referee.'); render(); }
+  else if (y === 'callnext') { const table = $('#qTable').value; const r = await act('next_match', { table }); if (r && r.ok) { toast('The next names were called to the table.'); go('home'); } }
+  else if (y === 'end') {
+    if (!await askConfirm({ title: 'End the night?', text: 'The camera stops and players see that you’re closed. Games in progress stay as they are.', yes: 'End the night', no: 'Keep going' })) return;
+    if (BAPP.cam) BAPP.cam.stopAll(); BAPP.lastOpen = false;
+    const r = await act('venue_open', { open: '0' }); if (r && r.ok) { BAPP.sig = {}; toast('Closed for the night. See you next time.'); render(); }
+  }
+  else if (y === 'printqr') bizPrintQR();
+  else if (y === 'evadd') { bizResetEventForm($('#bizEvForm')); $('[data-evform]').hidden = false; $('#evTitle').focus(); }
+  else if (y === 'evnew') bizResetEventForm($('#bizEvForm'));
+  else if (y === 'evedit') {
+    const ev = ((S.state && S.state.events) || []).find(v => v.id === a.dataset.id), f = $('#bizEvForm'); if (!ev || !f) return;
+    $('[data-evform]').hidden = false;
+    ['title', 'kind', 'gameType', 'date', 'time', 'cap', 'fee', 'prize', 'about'].forEach(k => { f.elements[k].value = k === 'cap' && !ev.cap ? '' : ev[k]; });
+    BIZ.editId = ev.id; $('#bizEvTitle').textContent = 'Edit event'; $('#bizEvSave').textContent = 'Save changes';
+    f.elements.title.focus();
+  }
+  else if (y === 'evdel') {
+    const ev = ((S.state && S.state.events) || []).find(v => v.id === a.dataset.id); if (!ev) return;
+    if (!await askConfirm({ title: 'Cancel ' + ev.title + '?', text: ev.count ? ev.count + ' player' + (ev.count > 1 ? 's are' : ' is') + ' signed up. The event disappears from their phones.' : 'The event disappears from players’ phones.', yes: 'Cancel event', no: 'Keep it' })) return;
+    const r = await act('event_remove', { id: ev.id }); if (r && r.ok) { toast('Event cancelled.'); if (BIZ.editId === ev.id) bizResetEventForm($('#bizEvForm')); }
+  }
+});
+
+function renderBizEvents(el, st) {
+  if (!el.dataset.mounted) {
+    el.dataset.mounted = '1';
+    el.innerHTML = `<div class="biz-grid biz"><section class="biz-card"><div class="biz-hd"><span class="sign">Events</span><span class="dim">Players see these on your bar’s page and sign up</span><button class="b go" style="margin-left:auto" data-act="biz-evadd">Add an event</button></div><div data-biz-events></div></section>
+      <section class="biz-card" data-evform hidden><form class="biz-form" id="bizEvForm" autocomplete="off">
+        <span class="label wide" id="bizEvTitle">New event</span>
+        <div class="biz-f wide"><label for="evTitle">Name</label><input id="evTitle" name="title" maxlength="60" placeholder="Tuesday 8-ball tournament" required></div>
+        <div class="biz-f"><label for="evKind">Type</label><select id="evKind" name="kind">${Object.entries(BIZ_KINDS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
+        <div class="biz-f"><label for="evGame">Game</label><select id="evGame" name="gameType"><option>8-ball</option><option>9-ball</option><option>10-ball</option></select></div>
+        <div class="biz-f"><label for="evDate">Date</label><input id="evDate" name="date" type="date" required></div>
+        <div class="biz-f"><label for="evTime">Starts</label><input id="evTime" name="time" type="time" value="19:00"></div>
+        <div class="biz-f"><label for="evCap">Spots</label><input id="evCap" name="cap" type="number" min="0" max="256" placeholder="No limit"></div>
+        <div class="biz-f"><label for="evFee">Entry</label><input id="evFee" name="fee" maxlength="30" placeholder="Free or $10"></div>
+        <div class="biz-f wide"><label for="evPrize">Prize <span class="dim">(optional)</span></label><input id="evPrize" name="prize" maxlength="60" placeholder="Bar tab for the winner"></div>
+        <div class="biz-f wide"><label for="evAbout">Details</label><textarea id="evAbout" name="about" maxlength="280" rows="2" placeholder="Format, skill level, what to bring"></textarea></div>
+        <div class="biz-row wide"><button class="b go" type="submit" id="bizEvSave">Add event</button><button class="b" type="button" data-act="biz-evnew" id="bizEvCancel">Cancel</button></div>
+      </form></section></div>`;
+    const ef = $('#bizEvForm', el);
+    ef.addEventListener('submit', async e => {
+      e.preventDefault();
+      const ev = {}; ['title', 'kind', 'gameType', 'date', 'time', 'cap', 'fee', 'prize', 'about'].forEach(k => { ev[k] = ef.elements[k].value.trim(); });
+      if (!ev.title) return toast('Give the event a name.');
+      if (!ev.date) return toast('Pick a date for the event.');
+      if (BIZ.editId) ev.id = BIZ.editId;
+      const r = await act('event_save', { event: ev });
+      if (r && r.ok) { toast(BIZ.editId ? 'Event updated.' : 'Event added. Players can sign up on their phones.'); bizResetEventForm(ef); }
+    });
+  }
+  const sig = JSON.stringify([st.events, st.venue.open]);
+  if (BIZ.sig.events !== sig) { BIZ.sig.events = sig; $('[data-biz-events]', el).innerHTML = bizEventsHTML(st); }
+}
+function bizEventsHTML(st) {
+  const evs = st.events || [];
+  if (!evs.length) return '<p class="dim" style="font-size:14px">No events coming up. Add one with the form.</p>';
+  return '<div class="biz-evlist">' + evs.map(e => `<div class="biz-ev">
+      <div class="when"><b>${esc(bizDay(e.date))}</b><small>${esc(bizTime(e.time))}</small></div>
+      <div style="min-width:0"><b>${esc(e.title)}${e.live ? ' <span class="badge">On now</span>' : ''}</b><small>${esc([BIZ_KINDS[e.kind] || e.kind, e.gameType, e.fee, e.prize].filter(Boolean).join(' · '))}</small>
+        <small class="chalk biz-names">${e.count ? esc(e.names.join(', ')) : 'Nobody signed up yet'}</small></div>
+      <div class="biz-evr"><span class="num">${e.count}${e.cap ? '/' + e.cap : ''}</span>${e.live ? '' : `<button class="b go" type="button" data-act="biz-evstart" data-ev="${e.id}">Start</button>`}<button class="b" type="button" data-act="biz-evedit" data-id="${e.id}">Edit</button><button class="b danger" type="button" data-act="biz-evdel" data-id="${e.id}">Cancel</button></div>
+    </div>`).join('') + '</div>';
+}
+function bizResetEventForm(f) {
+  f.reset(); BIZ.editId = null; f.elements.time.value = '19:00';
+  $('#bizEvTitle').textContent = 'New event'; $('#bizEvSave').textContent = 'Add event';
+  $('[data-evform]').hidden = true;
+}
+function bizPrintQR() {
+  const v = (S.state && S.state.venue) || {};
+  const w = window.open('', '_blank');
+  if (!w || !S.qr) return toast('Couldn’t open a print window. Take a photo of the QR code on the counter screen instead.');
+  w.document.write(`<!doctype html><title>Join the queue</title><body style="font-family:sans-serif;text-align:center;padding:40px"><h1 style="font-size:44px;margin:0 0 8px">${esc(v.name || 'Pool')}</h1><p style="font-size:24px;margin:0 0 24px">Scan to put your name on the board</p><img src="${S.qr}" style="width:70%;max-width:420px"><script>setTimeout(()=>print(),300)<\/script></body>`);
+  w.document.close();
+}
+// ===== App shell: the start screen, and the player app =====
+// Player flow: your details (name + email) -> Home: the best bar right now (closest, shortest wait), scan a QR code,
+// your rating and games -> a bar's page -> join its queue -> Home shows your place, the wait and the live game ->
+// called (3-minute timer, plus an email) -> in a game (ask the referee, flag a foul) -> result (new rating, rank,
+// play again or stop). After the first game the player makes an account with a password to keep playing.
+// The address picks the app: #play (also #mobile, which the bar's QR code and the emails open) for players,
+// #bar for bars, #tv for the bar TV. A first visit with no address shows the start screen.
+// Like business.js, this file only uses the page helpers ($, esc, act, S, ...) inside functions.
+var PAPP = { tab: 'home', bar: null, from: 'list', ev: null, joinFor: null, invite: null, acct: null, login: false, geo: null, geoAsked: false, scan: null, sig: {} };
+var APP_ICONS = {
+  play: '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="11" cy="11" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 8.6v4.8" stroke="currentColor" stroke-width="1.4"/></svg>',
+  bars: '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 20s6.5-6 6.5-11a6.5 6.5 0 0 0-13 0c0 5 6.5 11 6.5 11Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="11" cy="9" r="2.4" fill="currentColor"/></svg>',
+  ranks: '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 19h16M5.5 19v-6h3v6M9.5 19V7h3v12M13.5 19v-9h3v9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+  me: '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="7.5" r="3.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19.5c.8-4 3.8-6 7.5-6s6.7 2 7.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  star: '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="m11 2.8 2.5 5.2 5.7.8-4.1 4 1 5.6L11 15.7l-5.1 2.7 1-5.6-4.1-4 5.7-.8Z" fill="var(--fill,none)" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+  qr: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="6" y="6" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+};
+const backBtn = (act, label) => `<button class="backbtn" data-act="${act}"><span aria-hidden="true">${ICON.back}</span>${esc(label)}</button>`;
+
+// ---------- which app the address asks for ----------
+function shellRoute(h) {
+  document.body.classList.toggle('served', servedByN8n);
+  const view = shellView(h); document.body.dataset.app = view; return view;
+}
+function shellView(h) {
+  if (h === 'tv' || h === 'live') return 'live';
+  const hp = hashParts();
+  if (hp.invite) PAPP.invite = hp.invite;
+  if (hp.bar) { PAPP.tab = 'bars'; PAPP.bar = hp.bar; PAPP.from = 'home'; PAPP.ev = null; PAPP.joinFor = null; PAPP.sig = {}; }   // a scanned QR code opens that bar's page
+  let role = null;
+  if (['play', 'mobile', 'phone', 'player'].includes(h)) role = 'player';
+  else if (['bar', 'venue', 'counter', 'business', 'camera'].includes(h)) role = 'biz';
+  if (role) { store.set('role', role); return role; }
+  const saved = store.get('role', null);
+  return saved === 'player' || saved === 'biz' ? saved : 'start';
+}
+function goRole(role) {
+  store.set('role', role);
+  PAPP.tab = 'home'; PAPP.bar = null; PAPP.ev = null; PAPP.joinFor = null; PAPP.acct = null; PAPP.sig = {};   // land on the main page
+  if (typeof BAPP !== 'undefined') { BAPP.screen = 'home'; BAPP.editing = false; BAPP.sig = {}; }
+  if (S.sigs) S.sigs.clear(); const h = role === 'biz' ? '#bar' : role === 'player' ? '#play' : ''; if (location.hash === h || (!h && !location.hash)) route(); else location.hash = h; }
+
+// ---------- the player's profile: name + email, kept on this phone; a password once they've played a game ----------
+function playerProfile() { return store.get('player', null) || PAPP.mem || null; }
+function savePlayerProfile(p) { PAPP.mem = p; store.set('player', p); }
+function favs() { return store.get('favs', null) || PAPP.favMem || []; }
+function setFavs(list) { PAPP.favMem = list; store.set('favs', list); }
+const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+async function hashPassword(email, pw) {           // the password never leaves the phone; n8n stores this hash
+  const text = 'loopool|' + email.trim().toLowerCase() + '|' + pw;
+  try { const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)); return Array.from(new Uint8Array(d)).map(b => b.toString(16).padStart(2, '0')).join(''); }
+  catch (e) { let h = 2166136261, out = ''; for (let r = 0; r < 4; r++) { for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i) + r; h = Math.imul(h, 16777619); } out += (h >>> 0).toString(16).padStart(8, '0'); } return out + out; }
+}
+function needsAccount(st) { const P = playerProfile(); return !!(P && !P.account && st.my && (st.my.w + st.my.l) >= 1); }
+
+// ---------- bars, distance and the wait ----------
+function bars(st) {
+  const v = st.venue || {};
+  const list = v.setup ? [Object.assign({}, v, { id: 'home', home: true, events: st.events || [] })] : [];
+  return list.concat(st.directory || []);
+}
+function mapsLink(b) { return b.mapsUrl || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([b.name, b.address].filter(Boolean).join(' ')); }
+function distKm(b) {
+  if (!PAPP.geo || b.lat == null || b.lng == null) return null;
+  const R = 6371, rad = x => x * Math.PI / 180, dLat = rad(b.lat - PAPP.geo.lat), dLng = rad(b.lng - PAPP.geo.lng);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(PAPP.geo.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+function distText(b) { const d = distKm(b); return d == null ? '' : d < 1 ? Math.round(d * 1000 / 10) * 10 + ' m away' : (d < 10 ? d.toFixed(1) : Math.round(d)) + ' km away'; }
+function askLocation() {
+  if (PAPP.geoAsked || !navigator.geolocation) return; PAPP.geoAsked = true;
+  navigator.geolocation.getCurrentPosition(p => { PAPP.geo = { lat: p.coords.latitude, lng: p.coords.longitude }; PAPP.sig = {}; render(); }, () => { /* no location: no distances */ }, { timeout: 8000, maximumAge: 600000 });
+}
+function waitText(st) {                                       // a rough wait for someone joining now, from the live board
+  const free = st.tables.filter(t => t.status === 'empty' || (t.status === 'waiting' && !t.challenger)).length;
+  if (free && !st.queue.length) return 'A table is free now';
+  const lefts = st.tables.map(t => t.game && t.game.left).filter(x => x != null);
+  const soonest = lefts.length ? Math.min(...lefts) : 12;
+  const min = Math.max(1, Math.round(soonest + Math.floor(st.queue.length / Math.max(1, st.tables.length)) * 13));
+  return 'About ' + min + ' min wait · ' + st.queue.length + ' in line';
+}
+function barTodayLine(b, st) { if (b.home && b.open === false) return 'Closed right now'; return bizToday(b, st.now) || ''; }
+
+// ---------- render ----------
+function renderPlayerApp(st) {
+  const P = playerProfile(), root = $('#v-player');
+  $$('[data-ico]', root).forEach(i => { if (!i.innerHTML) i.innerHTML = APP_ICONS[i.dataset.ico]; });
+  if (P && (!S.draft.name || S.draft.name === 'Alex' || S.draft.name !== P.name)) { S.draft.name = P.name; S.draft.email = P.email || ''; }
+  const tab = P ? PAPP.tab : 'welcome';
+  $('.papp-tabs', root).hidden = !P;
+  $$('[data-act="ptab"]', root).forEach(b => b.setAttribute('aria-current', b.dataset.v === tab ? 'page' : 'false'));
+  $$('[data-pt]', root).forEach(el => { el.hidden = el.dataset.pt !== tab; });
+  const el = $('[data-pt="' + tab + '"]', root);
+  if (tab === 'welcome') renderWelcome(el, st);
+  else if (tab === 'home') renderHome(el, st);
+  else if (tab === 'bars') renderBarsTab(el, st);
+  else if (tab === 'ranks') renderRanksTab(el, st);
+  else if (tab === 'me') renderMeTab(el, st);
+}
+
+// Step 1: your details (or log in)
+function renderWelcome(el, st) {
+  const sig = 'w' + PAPP.login; if (PAPP.sig.welcome === sig) return; PAPP.sig.welcome = sig;
+  el.innerHTML = `<div class="ph">
+    ${backBtn('p-tostart', 'Back')}
+    <div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">${PAPP.login ? 'Welcome back' : 'Your details'}</h1>
+      <p class="lede">${PAPP.login ? 'Log in with the email and password you play with.' : 'Your name goes on the queue board and leaderboard. We email you when your table is ready.'}</p></div>
+    <form class="mform" id="welForm" novalidate>
+      ${PAPP.login ? '' : '<div class="field"><label for="wName">Name</label><input id="wName" type="text" maxlength="24" placeholder="First name or nickname" autocomplete="nickname" required></div>'}
+      <div class="field"><label for="wEmail">Email</label><input id="wEmail" type="email" placeholder="you@example.com" autocomplete="email" inputmode="email" required></div>
+      ${PAPP.login ? '<div class="field"><label for="wPw">Password</label><input id="wPw" type="password" autocomplete="current-password" required></div>' : ''}
+      <p class="formerr" role="alert" data-err></p>
+      <button class="cta" type="submit">${PAPP.login ? 'Log in' : 'Continue'}</button>
+    </form>
+    <button class="linkbtn" data-act="p-loginswap">${PAPP.login ? 'New here? Enter your details instead' : 'Already have an account? Log in'}</button>
+  </div>`;
+  $('#welForm', el).addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('[data-err]', el), email = $('#wEmail', el).value.trim();
+    if (!validEmail(email)) { err.textContent = 'Enter a valid email so we can tell you when your table is ready.'; return; }
+    if (PAPP.login) {
+      const pw = $('#wPw', el).value; if (pw.length < 6) { err.textContent = 'Passwords have at least 6 characters.'; return; }
+      const hash = await hashPassword(email, pw), r = await act('account_login', { email, hash }, true);
+      if (!r || !r.ok) { err.textContent = (r && r.error) || 'Couldn’t log in right now.'; return; }
+      savePlayerProfile({ name: r.account.name, email: r.account.email, hash, account: true });
+    } else {
+      const name = $('#wName', el).value.trim().slice(0, 24);
+      if (!name) { err.textContent = 'Add your name.'; return; }
+      savePlayerProfile({ name, email });
+    }
+    PAPP.sig = {}; S.sigs.clear(); toast('Hi ' + playerProfile().name + '!'); render(); window.scrollTo(0, 0);
+  });
+}
+
+// Home: the game you're in, or the best bar right now, scan a QR code, your stats
+function renderHome(el, st) {
+  const me = st.me, scr = phoneScreen(st);
+  const active = !!me && me.status !== 'left' && scr !== 'landing' && scr !== 'join';
+  const home = $('[data-home]', el), phone = $('[data-phone]', el), watch = $('[data-watch]', el);
+  const showInv = PAPP.invite && !active;
+  $('[data-invite]', el).innerHTML = showInv ? `<div class="invite"><b>${esc(PAPP.invite)} invited you to play</b><span>Join the queue at ${esc(st.venue.name)} and look for them at the table.</span><button class="quiet" data-act="p-invclose" aria-label="Dismiss">×</button></div>` : '';
+  if (PAPP.acct) { phone.hidden = true; watch.hidden = true; renderAccountSheet(home, st); return; }
+  if (active) {
+    home.innerHTML = ''; PAPP.sig.home = null;
+    phone.hidden = false; renderPhone(phone, st, 'player');
+    const w = ['queue', 'seated', 'called'].includes(scr);
+    watch.hidden = !w; if (w) renderTV($('[data-tv]', watch), st, 'pwatch');
+    return;
+  }
+  phone.hidden = true; watch.hidden = true;
+  askLocation();
+  const P = playerProfile(), my = st.my;
+  const sig = JSON.stringify([P, my, st.venue, st.directory && st.directory.length, waitText(st), PAPP.geo, needsAccount(st)]);
+  if (PAPP.sig.home === sig) return; PAPP.sig.home = sig;
+  const live = bars(st).filter(b => b.home && b.open !== false);
+  const best = live.sort((a, b) => (distKm(a) || 0) - (distKm(b) || 0))[0];
+  const others = bars(st).length - (best ? 1 : 0);
+  const games = my && my.games.length ? my.games.map(g => `<div><span><b>${g.won ? 'Won' : 'Lost'}</b> vs ${esc(g.opponent)}</span><small>${esc(g.table)}${g.rated ? ' · ' + (g.won ? '+' : '−') + Math.abs(g.delta) : ''} · ${fmtTime(g.at)}</small></div>`).join('') : '';
+  home.innerHTML = `<div class="ph">
+    ${topBar(`<span class="dim" style="font-size:14px">Hi ${esc(P.name)}</span>`)}
+    ${needsAccount(st) ? `<div class="notice"><b>Make your account to keep playing</b><span>You’ve played your first game. Add a password so your rating stays yours.</span><button class="b go" data-act="p-acct">Create account</button></div>` : ''}
+    ${best ? `<section class="bestbar"><span class="label">Best table near you</span>
+        <h1 class="h1">${esc(best.name)}</h1>
+        <p class="lede">${esc([distText(best), waitText(st)].filter(Boolean).join(' · '))}</p>
+        <div class="two"><button class="cta" data-act="p-join" data-id="home">Join the queue</button><button class="cta line" data-act="p-bar" data-id="home" data-from="home">See the bar</button></div>
+      </section>` : `<section class="bestbar"><span class="label">Right now</span><h1 class="h1">No bars are<br>open nearby</h1><p class="lede">Check the bars list for opening hours and events.</p></section>`}
+    <div class="two"><button class="quiet" data-act="p-scan">${APP_ICONS.qr}Scan a QR code</button><button class="quiet" data-act="ptab" data-v="bars">See ${others > 0 ? others + ' other' : 'all'} bars</button></div>
+    <section class="barsec"><span class="label">Your stats</span>
+      ${my ? `<div class="stats three"><div class="stat"><b>${my.rating}</b><span>Elo rating</span></div><div class="stat"><b>#${my.rank}</b><span>of ${my.of} players</span></div><div class="stat"><b>${my.w}–${my.l}</b><span>won–lost</span></div></div>` : '<p class="lede" style="font-size:14px">Everyone starts at 1200. Play a rated game on a camera table to get your rating.</p>'}
+    </section>
+    <section class="barsec"><span class="label">Your games</span>${games ? `<div class="results">${games}</div>` : '<p class="lede" style="font-size:14px">No games yet. Join a queue to play your first.</p>'}</section>
+  </div>`;
+}
+
+// The account sheet: after the first game (or from Me)
+function renderAccountSheet(el, st) {
+  const P = playerProfile(), sig = 'a' + PAPP.login + JSON.stringify(PAPP.acct);
+  if (PAPP.sig.home === sig) return; PAPP.sig.home = sig;
+  el.innerHTML = `<div class="ph">
+    ${backBtn('p-acctback', 'Back')}
+    <div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">${PAPP.login ? 'Log in' : 'Create your<br>account'}</h1>
+      <p class="lede">${PAPP.login ? 'There’s already an account for ' + esc(P.email) + '.' : 'You’ve played a game, so your rating is on the board. Add a password so it stays yours and you can keep playing.'}</p></div>
+    <form class="mform" id="acctForm" novalidate>
+      ${PAPP.login ? '' : `<div class="field"><label for="aName">Name</label><input id="aName" type="text" maxlength="24" value="${esc(P.name)}" required></div>`}
+      <div class="field"><label for="aEmail">Email</label><input id="aEmail" type="email" value="${esc(P.email)}" required></div>
+      <div class="field"><label for="aPw">Password</label><input id="aPw" type="password" autocomplete="${PAPP.login ? 'current-password' : 'new-password'}" required><small>At least 6 characters.</small></div>
+      <p class="formerr" role="alert" data-err></p>
+      <button class="cta" type="submit">${PAPP.login ? 'Log in' : 'Create account'}${PAPP.acct && PAPP.acct.then === 'join' ? ' and join' : ''}</button>
+    </form></div>`;
+  $('#acctForm', el).addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('[data-err]', el), email = $('#aEmail', el).value.trim(), pw = $('#aPw', el).value;
+    const name = PAPP.login ? P.name : $('#aName', el).value.trim().slice(0, 24);
+    if (!name) { err.textContent = 'Add your name.'; return; }
+    if (!validEmail(email)) { err.textContent = 'Enter a valid email.'; return; }
+    if (pw.length < 6) { err.textContent = 'Use at least 6 characters.'; return; }
+    const hash = await hashPassword(email, pw);
+    const r = await act(PAPP.login ? 'account_login' : 'account_create', { name, email, hash }, true);
+    if (!r || !r.ok) { if (r && r.code === 409) { PAPP.login = true; PAPP.sig = {}; render(); return; } err.textContent = (r && r.error) || 'Couldn’t save that right now.'; return; }
+    savePlayerProfile({ name: r.account.name, email: r.account.email, hash, account: true });
+    const then = PAPP.acct && PAPP.acct.then; PAPP.acct = null; PAPP.login = false; PAPP.sig = {};
+    toast(r.account && !PAPP.login ? 'Your account is ready.' : 'Logged in.');
+    if (then === 'join') await doJoin(PAPP.acctJoin || {}); else render();
+  });
+}
+
+// ---------- joining a queue (from Home, a bar's page or "play again") ----------
+async function doJoin(o) {
+  const st = S.state, P = playerProfile();
+  if (!P) return;
+  if (needsAccount(st)) { PAPP.acct = { then: 'join' }; PAPP.acctJoin = o; PAPP.login = false; PAPP.tab = 'home'; PAPP.sig = {}; render(); window.scrollTo(0, 0); return; }
+  S.ticket = null;
+  const r = await act('join', { name: P.name, email: P.email, hash: P.hash || undefined, gameType: o.gameType || '8-ball', refOnly: !!o.refOnly && (o.gameType || '8-ball') === '8-ball' }, true);
+  if (!r || !r.ok) {
+    if (r && r.code === 401) { PAPP.acct = { then: 'join' }; PAPP.acctJoin = o; PAPP.login = true; PAPP.tab = 'home'; PAPP.sig = {}; render(); return; }
+    toast((r && r.error) || 'Couldn’t join right now. Try again.'); return;
+  }
+  PAPP.tab = 'home'; PAPP.bar = null; PAPP.joinFor = null; PAPP.invite = null; PAPP.sig = {}; S.sigs.clear();
+  toast(r.me && r.me.position ? 'You’re #' + r.me.position + ' in line.' : 'You’re on the board.');
+  render(); window.scrollTo(0, 0);
+}
+function playerRejoin() { const me = S.state && S.state.me; doJoin({ gameType: (me && me.gameType) || '8-ball', refOnly: !!(me && me.refOnly) }); }
+
+// ---------- Bars: favourites, every bar's page, live tables, joining, events ----------
+function renderBarsTab(el, st) {
+  const sig = JSON.stringify([PAPP.bar, PAPP.ev, PAPP.joinFor, PAPP.joinPick, favs(), PAPP.geo, st.venue, st.events, st.directory, st.tables.map(t => [t.status, t.champ && t.champ.name, t.challenger && t.challenger.name, t.game && t.game.minutes]), st.queue.length, st.me && st.me.name]);
+  if (PAPP.sig.bars === sig) return; PAPP.sig.bars = sig;
+  const all = bars(st);
+  if (PAPP.ev) { el.innerHTML = '<div class="ph">' + playerEventHTML(st) + '</div>'; return; }
+  const b = PAPP.bar && all.find(x => x.id === PAPP.bar);
+  if (b) { el.innerHTML = '<div class="ph">' + barPageHTML(b, st) + '</div>'; return; }
+  if (PAPP.bar) { PAPP.bar = null; }
+  const F = favs(), row = x => {
+    const fav = F.includes(x.id);
+    const live = x.home ? (x.open === false ? 'Closed right now' : waitText(st)) : (x.events && x.events.length ? x.events.length + ' event' + (x.events.length > 1 ? 's' : '') + ' coming up' : '');
+    return `<div class="barrow"><button class="barrow-main" data-act="p-bar" data-id="${esc(x.id)}" data-from="list"><b>${esc(x.name)}</b><small>${esc([distText(x), barTodayLine(x, st)].filter(Boolean).join(' · '))}</small><small>${esc(x.address || '')}</small>${live ? `<small class="live">${esc(live)}</small>` : ''}</button>
+      <button class="starbtn${fav ? ' on' : ''}" data-act="p-fav" data-id="${esc(x.id)}" aria-pressed="${fav}" aria-label="${fav ? 'Remove ' + esc(x.name) + ' from favourites' : 'Add ' + esc(x.name) + ' to favourites'}">${APP_ICONS.star}</button></div>`;
+  };
+  const byDist = (a, b) => (distKm(a) == null ? 1e9 : distKm(a)) - (distKm(b) == null ? 1e9 : distKm(b));
+  const favList = all.filter(x => F.includes(x.id)).sort(byDist), rest = all.filter(x => !F.includes(x.id)).sort(byDist);
+  el.innerHTML = `<div class="ph">
+    ${backBtn('ptab" data-v="home', 'Home')}
+    <h1 class="h1">Bars</h1>
+    <p class="lede">${PAPP.geo ? 'Closest first. ' : ''}Star the bars you go to most. Tap a bar for its tables, events and hours.</p>
+    ${favList.length ? `<section class="barlist"><span class="label">Your favourites</span>${favList.map(row).join('')}</section>` : ''}
+    <section class="barlist"><span class="label">${favList.length ? 'More bars' : 'Bars on Loopool'}</span>${rest.map(row).join('') || '<p class="lede">No bars yet.</p>'}</section>
+  </div>`;
+}
+function barPageHTML(b, st) {
+  const fav = favs().includes(b.id), open = b.home && b.open !== false;
+  const facts = [b.tableCount ? [b.tableCount, (b.tableBrand ? b.tableBrand + ' ' : '') + 'tables' + (b.tableSize ? ', ' + b.tableSize : '')] : null, b.cues ? [b.cues, 'house cues'] : null].filter(Boolean);
+  const todayKey = BIZ_DAYS[(new Date(st.now).getDay() + 6) % 7][0];
+  const hours = b.hours ? BIZ_DAYS.map(([d, name]) => { const h = b.hours[d] || {}; return `<div class="${d === todayKey ? 'today' : ''}"><span>${name}</span><span>${h.closed ? 'Closed' : bizTime(h.open) + ' – ' + bizTime(h.close)}</span></div>`; }).join('') : '';
+  const evs = (b.events || []).map(e => `<button class="biz-prow" data-act="p-ev" data-id="${esc(e.id)}"><span class="when"><b>${esc(bizDay(e.date).split(' ')[0])}</b><small>${esc(bizDay(e.date).split(' ').slice(1).join(' '))}</small></span><span style="min-width:0;text-align:left"><b>${esc(e.title)}${e.live ? ' <span class="badge">On now</span>' : ''}</b><small>${esc(bizTime(e.time))} · ${esc(e.fee || BIZ_KINDS[e.kind] || '')} · ${e.count}${e.cap ? '/' + e.cap : ''} going</small></span><span class="go">${b.home ? 'Sign up' : 'Details'}</span></button>`).join('');
+  const pick = PAPP.joinPick || { gameType: '8-ball', refOnly: false }, nine = pick.gameType !== '8-ball';
+  const joinBox = !b.home ? `<p class="lede" style="font-size:14px">This bar’s live queue isn’t connected in this demo. Scan the QR code on its TV when you get there.</p>`
+    : !open ? '<p class="lede">Closed right now. The queue opens when the bar starts its night.</p>'
+    : PAPP.joinFor === b.id ? `<section class="joinbox"><span class="label">Join the queue as ${esc(playerProfile().name)}</span>
+        <div class="seg"><button type="button" data-act="p-pick" data-v="8-ball" aria-pressed="${!nine}">8-BALL</button><button type="button" data-act="p-pick" data-v="9-ball" aria-pressed="${nine}">9-BALL</button></div>
+        <label class="switch" for="jRef2"><span><b>Camera table only</b><small>${nine ? 'The camera referee supports 8-ball for now.' : 'Rated game on Table 1, fouls called by the camera. The wait can be longer.'}</small></span><span class="knob"><input id="jRef2" type="checkbox" ${pick.refOnly && !nine ? 'checked' : ''} ${nine ? 'disabled' : ''} data-act="p-pickref"><i></i></span></label>
+        <button class="cta" data-act="p-joinnow">Join the queue</button><button class="quiet" data-act="p-joincancel">Not now</button></section>`
+    : `<button class="cta" data-act="p-join" data-id="${esc(b.id)}">Join the queue</button>`;
+  const live = b.home && open ? `<section class="barsec"><span class="label">Tables right now · ${esc(waitText(st))}</span><div class="rows">${st.tables.map((t, i) => `<div class="row"><span class="n${t.ref ? ' ref' : ''}">${i + 1}</span><div style="min-width:0"><b>${t.game || t.status === 'checkin' ? esc(t.champ.name) + ' vs ' + esc(t.challenger ? t.challenger.name : '…') : t.champ ? esc(t.champ.name) + ' needs a challenger' : 'Free'}</b><small>${t.gameType}${t.ref ? ' · camera referee · rated' : ''}</small></div><span class="t">${t.game ? t.game.minutes + ' min' : ''}</span></div>`).join('')}</div></section>` : '';
+  return `<div class="ph-top" style="justify-content:space-between">${backBtn('p-back', PAPP.from === 'home' ? 'Home' : 'All bars')}
+      <button class="starbtn${fav ? ' on' : ''}" data-act="p-fav" data-id="${esc(b.id)}" aria-pressed="${fav}" aria-label="${fav ? 'Remove from favourites' : 'Add to favourites'}">${APP_ICONS.star}</button></div>
+    <div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">${esc(b.name)}</h1>
+      <p class="lede">${esc([distText(b), barTodayLine(b, st)].filter(Boolean).join(' · '))}</p>
+      ${b.address ? `<p class="lede" style="font-size:14px">${esc(b.address)}</p>` : ''}
+      <p style="display:flex;gap:16px;flex-wrap:wrap"><a href="${esc(mapsLink(b))}" target="_blank" rel="noopener">Directions</a>${b.phone ? `<a href="tel:${esc(b.phone.replace(/[^+\d]/g, ''))}">Call</a>` : ''}${b.website ? `<a href="${esc(b.website)}" target="_blank" rel="noopener">Website</a>` : ''}</p></div>
+    ${joinBox}
+    ${b.about ? `<p style="font-size:15px">${esc(b.about)}</p>` : ''}
+    ${facts.length ? `<div class="stats">${facts.map(f => `<div class="stat"><b>${esc(f[0])}</b><span>${esc(f[1])}</span></div>`).join('')}</div>` : ''}
+    ${live}
+    <section class="barsec"><span class="label">Events</span>${evs || '<p class="lede" style="font-size:14px">No events posted yet.</p>'}</section>
+    ${hours ? `<section class="barsec"><span class="label">Opening hours</span><div class="hours">${hours}</div></section>` : ''}`;
+}
+function playerEventHTML(st) {
+  const [barId, evId] = PAPP.ev, b = bars(st).find(x => x.id === barId), e = b && (b.events || []).find(x => x.id === evId);
+  const back = backBtn('p-evback', b ? b.name : 'Bars');
+  if (!e) return back + '<h1 class="h1">This event<br>was cancelled</h1>';
+  const P = playerProfile(), name = P ? P.name : '';
+  const names = e.names || [], signed = name && names.some(n => n.toLowerCase() === name.toLowerCase()), full = e.cap && e.count >= e.cap;
+  return `${back}
+    <div style="display:flex;flex-direction:column;gap:8px"><span class="label">${esc(BIZ_KINDS[e.kind] || e.kind)} · ${esc(e.gameType)}${e.live ? ' · on now' : ''}</span><h1 class="h1">${esc(e.title)}</h1>
+      <p class="lede">${esc(bizDay(e.date))}, ${esc(bizTime(e.time))}${e.fee ? ' · ' + esc(e.fee) : ''}${e.prize ? ' · ' + esc(e.prize) : ''}</p></div>
+    ${e.about ? `<p style="font-size:15px">${esc(e.about)}</p>` : ''}
+    <div class="stats"><div class="stat"><b>${e.count}${e.cap ? '/' + e.cap : ''}</b><span>signed up</span></div><div class="stat"><b>${full ? 'Full' : e.cap ? e.cap - e.count + ' left' : 'Open'}</b><span>spots</span></div></div>
+    ${names.length ? `<p class="chalk" style="font-size:20px;line-height:1.3">${esc(names.join(', '))}</p>` : ''}
+    ${b.home ? `<div class="push">${signed ? '<button class="cta line" data-act="p-evleave">I can’t make it</button>' : `<button class="cta" data-act="p-evjoin"${full ? ' disabled' : ''}>${full ? 'This event is full' : 'Count me in as ' + esc(name)}</button>`}</div>`
+    : '<p class="lede" style="font-size:14px">Sign up at the bar, or call them.</p>'}`;
+}
+
+// ---------- Ranks: your rating and where you are on the board ----------
+function renderRanksTab(el, st) {
+  const P = playerProfile();
+  const sig = JSON.stringify([st.leaderboard, st.my, st.venue.name, P && P.account]);
+  if (PAPP.sig.ranks === sig) return; PAPP.sig.ranks = sig;
+  const my = st.my, L = st.leaderboard;
+  const row = (p, i, me) => `<div class="${me ? 'me' : ''}"${me ? ' aria-current="true"' : ''}><span>${i}</span><span>${esc(p.name)}${me ? ' <span class="youtag">You</span>' : ''}</span><span>${p.rating}</span></div>`;
+  let rows = L.map((p, i) => row(p, i + 1, my && p.pid === my.pid)).join('');
+  if (my && my.rank > L.length) rows += '<div><span>…</span><span></span><span></span></div>' + row(my, my.rank, true);
+  el.innerHTML = `<div class="ph">${backBtn('ptab" data-v="home', 'Home')}<h1 class="h1">Ranks</h1><span class="label">${esc(st.venue.name)} · Elo ratings</span>
+    ${my ? `<div class="mycard"><div><span class="label">Your rating</span><b>${my.rating}</b></div><div><span class="label">Your place</span><b>#${my.rank}</b><small>of ${my.of}</small></div><div><span class="label">Record</span><b>${my.w}–${my.l}</b></div></div>` : '<p class="lede">Join a queue and play a rated game on a camera table to get your rating. Everyone starts at 1200.</p>'}
+    <div class="lb ranks">${rows}</div>
+    <p class="lede" style="font-size:13px">Beating a higher-rated player moves you up more. Only games on a camera table are rated.</p>
+    ${P && !P.account ? '<div class="notice"><b>Set up your profile</b><span>Add a password so your rating and games stay yours, on any phone.</span><button class="b go" data-act="p-setup">Set up my profile</button></div>' : ''}</div>`;
+  const meRow = $('.lb.ranks .me', el); if (meRow && meRow.scrollIntoView && PAPP.tab === 'ranks') meRow.scrollIntoView({ block: 'nearest' });
+}
+
+// ---------- Me: profile, account, invite, switch to the bar app, log out ----------
+function renderMeTab(el, st) {
+  const P = playerProfile();
+  const sig = JSON.stringify([P, favs().length, st.my && st.my.rating]);
+  if (PAPP.sig.me === sig || el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return; PAPP.sig.me = sig;
+  const initials = P.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  el.innerHTML = `<div class="ph">${backBtn('ptab" data-v="home', 'Home')}
+    <div class="mecard"><span class="avatar">${esc(initials)}</span><div><b>${esc(P.name)}</b><small>${esc(P.email)}</small><small>${P.account ? 'Account with password' : 'No password yet'} · ${favs().length} favourite bar${favs().length === 1 ? '' : 's'}</small></div></div>
+    ${P.account ? '' : '<div class="notice"><b>Set up your profile</b><span>You haven\u2019t set a password yet. Add one so your rating and games stay yours.</span><button class="b go" data-act="p-acct">Add a password</button></div>'}
+    <form class="mform" id="meForm" novalidate>
+      <div class="field"><label for="meName">Name</label><input id="meName" type="text" maxlength="24" value="${esc(P.name)}" required><small>Shown on the queue board and leaderboard.</small></div>
+      <div class="field"><label for="meEmail">Email</label><input id="meEmail" type="email" value="${esc(P.email)}" required><small>We email you when your table is ready.</small></div>
+      <p class="formerr" role="alert" data-err></p>
+      <button class="cta" type="submit">Save changes</button>
+    </form>
+    <button class="quiet" data-act="p-invite">Invite a friend to play</button>
+    <div class="push">
+      <button class="quiet" data-act="p-tobar">Switch to the bar app</button>
+      <button class="quiet" data-act="p-logout">Log out of this phone</button>
+      <button class="quiet dangerq" data-act="p-delete">Delete my profile</button>
+    </div></div>`;
+  $('#meForm', el).addEventListener('submit', e => {
+    e.preventDefault();
+    const err = $('[data-err]', el), name = $('#meName', el).value.trim().slice(0, 24), email = $('#meEmail', el).value.trim();
+    if (!name) { err.textContent = 'Add your name.'; return; }
+    if (!validEmail(email)) { err.textContent = 'Enter a valid email.'; return; }
+    savePlayerProfile(Object.assign({}, P, { name, email }, email.toLowerCase() !== P.email.toLowerCase() ? { account: false, hash: undefined } : {}));
+    PAPP.sig = {}; toast(st.me && ['waiting', 'called', 'playing'].includes(st.me.status) ? 'Saved. Your new name shows next time you join a queue.' : 'Saved.'); render();
+  });
+}
+async function invitePlayer() {
+  const P = playerProfile(), v = (S.state && S.state.venue) || {};
+  const url = location.href.split('#')[0] + '#mobile&invite=' + encodeURIComponent(P ? P.name : 'A friend');
+  const text = (P ? P.name : 'A friend') + ' wants to play pool with you at ' + (v.name || 'the bar') + '. Join the queue here:';
+  try { if (navigator.share) { await navigator.share({ title: 'Play pool with me', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text + ' ' + url); toast('Invite link copied. Paste it in a message to your friend.'); }
+  catch (e) { window.prompt('Copy this invite link:', url); }
+}
+function forgetPlayer() {
+  store.set('player', null); store.set('favs', null); PAPP.mem = null; PAPP.favMem = [];
+  S.ticket = null; S.draft.name = ''; S.draft.email = ''; if (S.mode === 'live') saveTicket(null);
+  PAPP.tab = 'home'; PAPP.bar = null; PAPP.acct = null; PAPP.sig = {}; S.sigs.clear();
+}
+
+// ---------- QR scanner: the bar's TV shows a code that opens the bar's page here ----------
+async function openScanner() {
+  const box = $('[data-scanner]'), video = $('video', box), msg = $('[data-scanmsg]', box);
+  box.hidden = false; msg.textContent = 'Point your camera at the QR code on the bar’s TV.';
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); }
+  catch (e) { msg.textContent = 'The camera isn’t available. Open your phone’s camera app and point it at the code instead.'; return; }
+  video.srcObject = stream; await video.play().catch(() => {});
+  let detect = null;
+  if ('BarcodeDetector' in window) { try { const d = new BarcodeDetector({ formats: ['qr_code'] }); detect = async () => { const r = await d.detect(video); return r[0] && r[0].rawValue; }; } catch (e) { detect = null; } }
+  if (!detect) {
+    if (!window.jsQR) await new Promise(res => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'; s.onload = res; s.onerror = res; document.head.appendChild(s); });
+    const c = document.createElement('canvas'), g = c.getContext('2d', { willReadFrequently: true });
+    detect = async () => { if (!window.jsQR || !video.videoWidth) return null; c.width = 480; c.height = Math.round(480 * video.videoHeight / video.videoWidth); g.drawImage(video, 0, 0, c.width, c.height); const r = window.jsQR(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height); return r && r.data; };
+  }
+  PAPP.scan = { stream, on: true };
+  const tick = async () => {
+    if (!PAPP.scan || !PAPP.scan.on) return;
+    let text = null; try { text = await detect(); } catch (e) { text = null; }
+    if (text) { closeScanner(); handleScan(text); return; }
+    setTimeout(tick, 250);
+  };
+  tick();
+}
+function closeScanner() { const box = $('[data-scanner]'); box.hidden = true; if (PAPP.scan) { PAPP.scan.on = false; PAPP.scan.stream.getTracks().forEach(t => t.stop()); PAPP.scan = null; } }
+function handleScan(text) {
+  let u; try { u = new URL(text, location.href); } catch (e) { toast('That isn’t a Loopool code.'); return; }
+  if (u.origin + u.pathname === location.origin + location.pathname && /bar=|mobile|play/.test(u.hash)) { location.hash = u.hash; return; }
+  if (/^https?:$/.test(u.protocol) && /pool-app|mobile|bar=/.test(u.href)) { location.href = u.href; return; }   // another bar's Loopool page
+  toast('That isn’t a Loopool code.');
+}
+
+// ---------- buttons ----------
+document.addEventListener('click', async e => {
+  const a = e.target.closest('[data-act]'); if (!a || a.disabled) return;
+  const x = a.dataset.act;
+  if (x === 'role') goRole(a.dataset.v);
+  else if (x === 'ptab') { closeScanner(); PAPP.tab = a.dataset.v; PAPP.sig = {}; PAPP.acct = null; if (PAPP.tab === 'bars') { PAPP.bar = null; PAPP.ev = null; PAPP.joinFor = null; } render(); window.scrollTo(0, 0); }
+  else if (x === 'p-tostart') { store.set('role', null); PAPP.sig = {}; if (location.hash) location.hash = ''; else route(); }
+  else if (x === 'p-loginswap') { PAPP.login = !PAPP.login; PAPP.sig = {}; render(); }
+  else if (x === 'p-bar') { PAPP.tab = 'bars'; PAPP.bar = a.dataset.id; PAPP.from = a.dataset.from || 'list'; PAPP.joinFor = null; PAPP.sig = {}; render(); window.scrollTo(0, 0); }
+  else if (x === 'p-back') { const from = PAPP.from; PAPP.bar = null; PAPP.joinFor = null; PAPP.sig = {}; if (from === 'home') PAPP.tab = 'home'; render(); window.scrollTo(0, 0); }
+  else if (x === 'p-join') { PAPP.tab = 'bars'; if (PAPP.bar !== a.dataset.id) PAPP.from = PAPP.bar ? PAPP.from : 'home'; PAPP.bar = a.dataset.id; PAPP.joinFor = a.dataset.id; PAPP.joinPick = PAPP.joinPick || { gameType: '8-ball', refOnly: false }; PAPP.sig = {}; render(); }
+  else if (x === 'p-pick') { PAPP.joinPick = Object.assign({}, PAPP.joinPick, { gameType: a.dataset.v }); PAPP.sig = {}; render(); }
+  else if (x === 'p-pickref') { PAPP.joinPick = Object.assign({}, PAPP.joinPick, { refOnly: a.checked }); }
+  else if (x === 'p-joincancel') { PAPP.joinFor = null; PAPP.sig = {}; render(); }
+  else if (x === 'p-joinnow') { a.disabled = true; await doJoin(PAPP.joinPick || {}); a.disabled = false; }
+  else if (x === 'p-ev') { PAPP.ev = [PAPP.bar, a.dataset.id]; PAPP.sig = {}; render(); window.scrollTo(0, 0); }
+  else if (x === 'p-evback') { PAPP.ev = null; PAPP.sig = {}; render(); }
+  else if (x === 'p-fav') { const id = a.dataset.id, F = favs(); setFavs(F.includes(id) ? F.filter(f => f !== id) : F.concat(id)); PAPP.sig = {}; render(); toast(F.includes(id) ? 'Removed from favourites.' : 'Added to your favourites.'); }
+  else if (x === 'p-scan') openScanner();
+  else if (x === 'p-scanclose') closeScanner();
+  else if (x === 'p-invclose') { PAPP.invite = null; PAPP.sig = {}; render(); }
+  else if (x === 'p-invite') invitePlayer();
+  else if (x === 'p-acct') { PAPP.acct = { then: null }; PAPP.login = false; PAPP.tab = 'home'; PAPP.sig = {}; render(); window.scrollTo(0, 0); }
+  else if (x === 'p-setup') { PAPP.tab = 'me'; PAPP.sig = {}; render(); window.scrollTo(0, 0); }
+  else if (x === 'p-acctback') { PAPP.acct = null; PAPP.login = false; PAPP.sig = {}; render(); }
+  else if (x === 'p-tobar') goRole('biz');
+  else if (x === 'stopplay') { const r = await act('leave'); if (r && r.ok) { S.ticket = null; if (S.mode === 'live') saveTicket(null); PAPP.sig = {}; S.sigs.clear(); toast('You gave up the table. Thanks for playing!'); render(); } }
+  else if (x === 'p-evjoin' || x === 'p-evleave') {
+    const P = playerProfile();
+    const r = await act(x === 'p-evjoin' ? 'event_join' : 'event_leave', { id: PAPP.ev[1], name: P.name });
+    if (r && r.ok) { PAPP.sig = {}; render(); toast(x === 'p-evjoin' ? 'You’re signed up. See you there!' : 'You’re off the list.'); }
+  }
+  else if (x === 'p-logout' || x === 'p-delete') {
+    const del = x === 'p-delete', me = S.state && S.state.me;
+    if (!await askConfirm({ title: del ? 'Delete your profile?' : 'Log out of this phone?', text: (del ? 'Your name, email and favourite bars are removed from this phone' : 'Your details are removed from this phone. Log in again with your email and password') + (me && ['waiting', 'called'].includes(me.status) ? ', and you leave the queue' : '') + '. Your results stay on the leaderboard.', yes: del ? 'Delete my profile' : 'Log out', no: 'Cancel' })) return;
+    if (me && ['waiting', 'called'].includes(me.status)) await act('leave');
+    forgetPlayer(); store.set('role', null); toast(del ? 'Profile deleted.' : 'Logged out.');
+    if (location.hash) location.hash = ''; else route();
+  }
+});
 
 // ===== Page logic =====
 const $ = (s, el) => (el || document).querySelector(s);
@@ -1822,7 +2944,7 @@ const store = {
 // n8n can serve the page in a sandbox (n8n Cloud always does), where localStorage is blocked.
 // Then the ticket rides in the link instead (#phone&t=A102), so a reload keeps your place in the queue.
 const canStore = (() => { try { localStorage.setItem('loopool.t', '1'); localStorage.removeItem('loopool.t'); return true; } catch (e) { return false; } })();
-const hashParts = () => { const [view, t] = location.hash.replace(/^#/, '').split('&t='); return { view, ticket: t ? decodeURIComponent(t) : null }; };
+const hashParts = () => { const raw = location.hash.replace(/^#/, ''), view = raw.split('&')[0], t = /(?:^|&)t=([^&]*)/.exec(raw), inv = /(?:^|&)invite=([^&]*)/.exec(raw), bar = /(?:^|&)bar=([^&]*)/.exec(raw); return { view, ticket: t ? decodeURIComponent(t[1]) : null, invite: inv ? decodeURIComponent(inv[1]).slice(0, 24) : null, bar: bar ? decodeURIComponent(bar[1]).slice(0, 40) : null }; };
 function loadTicket() { return canStore ? store.get('ticket', null) : hashParts().ticket; }
 function saveTicket(t) {
   if (canStore) { store.set('ticket', t); return; }
@@ -1834,12 +2956,12 @@ const BALL_COLORS = { 1: '#f2c10f', 2: '#1f4fd0', 3: '#d42a2a', 4: '#6a2f9e', 5:
 const ballColor = b => BALL_COLORS[b > 8 ? b - 8 : b];
 const SCRIPT = buildScript();
 const servedByN8n = /\/pool-app\/?$/.test(location.pathname);
-const VIEWS = ['presenter', 'phone', 'venue', 'live', 'camera'];
+const VIEWS = ['start', 'player', 'biz', 'live'];   // the start screen, the player app, the bar app and the bar TV (see shell.js)
 const S = {
   mode: servedByN8n ? 'live' : store.get('mode', 'demo'),
   base: servedByN8n ? location.origin + location.pathname.replace(/\/pool-app\/?$/, '') : store.get('base', ''),
   ticket: null, state: null, local: null, err: null, busy: false, receivedAt: 0,
-  view: 'presenter', ack: {}, auto: false, lastEv: null, joinOpen: false,
+  view: 'start', ack: {}, auto: false, lastEv: null, joinOpen: false,
   draft: { name: 'Alex', email: '', gameType: '8-ball', refOnly: true },
   sigs: new Map(), tviews: new Map(), qr: '',
 };
@@ -1850,6 +2972,7 @@ if (S.mode === 'live') { S.ticket = loadTicket(); S.draft.name = ''; }
 async function api(action, params) {
   params = Object.assign({}, params || {});
   if (S.ticket && params.ticket == null && action !== 'join') params.ticket = S.ticket;
+  if (params.player == null && typeof playerProfile === 'function') { const pp = playerProfile(); if (pp && pp.name) params.player = pp.name; }   // your own stats and rank (player.js)
   if (S.mode === 'live') {
     try {
       const u = new URL(S.base.replace(/\/+$/, '') + '/pool');
@@ -2151,7 +3274,7 @@ const PHONE = {
       ${floorHTML(st, 'you')}
       ${opp ? `<div class="versus"><div class="p"><span class="chalk">${esc(me.name)}</span><small>rating ${me.rating}</small><small>${me.side === 'champ' ? 'holds the table' : 'challenger'}</small></div><span class="x">VS</span><div class="p r"><span class="chalk">${esc(opp.name)}</span><small>rating ${opp.rating}</small><small>${oppSide === 'champ' ? 'holds the table' : 'challenger'}</small>${oppSide === 'champ' && t.streak ? tally(t.streak, st.rules.maxWins) : ''}</div></div>` : ''}
       <p class="lede" style="font-size:14px">Winner stays on.${opp && oppSide === 'champ' ? ' Beat ' + esc(opp.name) + ' to take over ' + esc(t.name) + '.' : ''} If you don't check in, the next name on the board is called.</p>
-      <div class="push"><button class="cta" data-act="checkin">I'm at the table</button></div>`;
+      <div class="push"><button class="cta" data-act="checkin">I'm at the table</button><button class="quiet" data-act="leave">I can't make it: give up my spot</button></div>`;
   },
   seated(st, me, t) {
     const other = t[me.side === 'champ' ? 'challenger' : 'champ'];
@@ -2166,6 +3289,7 @@ const PHONE = {
     const sides = [me.side, me.side === 'champ' ? 'challenger' : 'champ'];
     const last = g.shots[g.shots.length - 1];
     return `${tableBar(t, `<span class="live-tag">Live${g.shots.length ? ' · shot ' + g.shots.length : ''}${g.rated ? ' · rated' : ''}</span>`)}
+      <p class="lede" style="font-size:16px">You're playing <span class="chalk" style="font-size:22px;color:var(--chalk)">${esc(t[sides[1]].name)}</span>. Tap <b>Ask the referee</b> about a foul, or flag the last shot to review it.</p>
       <div style="display:flex;flex-direction:column;gap:10px">${sides.map(s => playerPanel(st, t, g, s)).join('')}</div>
       ${photoURL(t) ? photoHTML(t) : '<div class="tbl" data-tbl="phone"></div>'}
       <p class="lastshot">${last ? '<span class="dim">Last shot:</span>' + shotLine(last) + '.' : '<span class="dim">Break when you\'re ready.</span> The camera scores from the first shot.'}</p>
@@ -2225,8 +3349,9 @@ const PHONE = {
         ${r.rated ? `<div class="delta"><b class="${r.delta < 0 ? 'down' : ''}">${r.delta >= 0 ? '+' : ''}${r.delta}</b><span>rating ${before} → ${r.rating}</span></div>` : '<div class="delta"><span>Unrated game</span></div>'}</div>
       ${won && r.stayOn ? `<div class="hold"><div class="hd"><b>You hold ${esc(r.table)}</b>${tally(r.streak, st.rules.maxWins)}</div><span class="dim" style="font-size:14px">Winner stays on. ${next ? `Next on the board: <span class="chalk" style="font-size:20px;color:var(--chalk)">${esc(next.name)}</span>, ${next.present ? 'ready to play.' : 'checking in now.'}` : 'Waiting for the next name on the board.'}</span></div>` : ''}
       ${r.retired ? `<div class="hold"><div class="hd"><b>${st.rules.maxWins} in a row</b>${tally(st.rules.maxWins, st.rules.maxWins)}</div><span class="dim" style="font-size:14px">House rule: the table goes to the next players now. Nice run.</span></div>` : ''}
+      ${st.my ? `<p class="lede" style="font-size:15px">You're <b style="color:var(--chalk)">#${st.my.rank}</b> of ${st.my.of} on the leaderboard, rating <b style="color:var(--chalk)">${st.my.rating}</b>.</p>` : ''}
       <section aria-label="Leaderboard" style="display:flex;flex-direction:column;gap:4px"><span class="label">Tonight's ratings</span>${lbHTML(st, me.pid, 4)}</section>
-      <div class="push">${won && r.stayOn ? `<button class="cta" data-act="ack" data-g="${esc(r.gameId)}">${next ? 'Play ' + esc(next.name) + ' next' : 'Keep the table'}</button>` : `<button class="cta" data-act="rejoin">Put my name back on the board</button><button class="quiet" data-act="done">I'm done for tonight</button>`}</div>`;
+      <div class="push">${won && r.stayOn ? `<button class="cta" data-act="ack" data-g="${esc(r.gameId)}">${next ? 'Play ' + esc(next.name) + ' next' : 'Keep the table'}</button><button class="quiet" data-act="stopplay">Stop playing</button>` : `<button class="cta" data-act="rejoin">Put my name back on the board</button><button class="quiet" data-act="done">I'm done for tonight</button>`}</div>`;
   },
   missed(st, me) {
     return `${topBar(`<span class="mono dim" style="font-size:13px">${esc(me.ticket)}</span>`)}
@@ -2364,7 +3489,8 @@ function renderMode() {
 }
 function renderControls(st) {
   const me = st && st.me;
-  const bar = document.querySelector('.controls'); if (bar) bar.style.display = S.mode === 'live' ? 'none' : '';   // demo tools: on demo data only, never on a real venue
+  const bar = document.querySelector('.controls'); if (bar) bar.style.display = servedByN8n ? 'none' : '';   // demo tools: never on a real venue's page
+  $$('[data-act="quick"], [data-act="reset"]').forEach(b => { b.hidden = S.mode === 'live'; });   // demo data only
   $('[data-act="quick"]').disabled = !!(me && ['waiting', 'called', 'playing'].includes(me.status));
 }
 function render() {
@@ -2374,11 +3500,9 @@ function render() {
   const st = S.state; renderControls(st);
   if (!st) return;
   const v = S.view;
-  if (v === 'presenter' || v === 'phone') renderPhone($('#v-' + v + ' [data-phone]'), st, v);
-  if (v === 'presenter' || v === 'live') renderTV($('#v-' + v + ' [data-tv]'), st, v);
-  if (v === 'presenter' || v === 'venue') renderVenue($('#v-' + v + ' [data-venue]'), st);
-  if (v === 'venue') renderStaff(st);
-  if (v === 'camera') { const el = $('#v-camera [data-camera]'); if (el && !el.dataset.mounted && window.CameraView) { el.dataset.mounted = '1'; window.CameraView.mount(el, { base: S.mode === 'live' ? S.base : '', table: 'T1', tables: () => ((S.state && S.state.tables) || []).map(t => ({ id: t.id, name: t.name, ref: t.ref })) }); } }
+  if (v === 'player') renderPlayerApp(st);                 // player.js
+  if (v === 'biz') renderBizApp(st);                       // business.js
+  if (v === 'live') renderTV($('#v-live [data-tv]'), st, 'live');
 }
 // ---------- staff tools on the counter tablet (start match, switch turn, foul, undo, next match, winner, group, clear) ----------
 function renderStaff(st) {
@@ -2436,7 +3560,7 @@ async function staffAct(a) {
 }
 // #tv = the bar TV on its own, full screen; #mobile = the player phone on its own. Neither shows the site header,
 // the test buttons (Reset!) or the footer, so the QR code and emails link to #mobile.
-function route() { const h0 = hashParts().view, h = h0 === 'tv' ? 'live' : h0 === 'mobile' ? 'phone' : h0; document.body.classList.toggle('kiosk', h0 === 'tv' || h0 === 'mobile' || h0 === 'camera'); document.body.classList.toggle('tvmode', h0 === 'tv'); if (h0 !== 'tv') document.body.classList.remove('tvfull'); S.view = VIEWS.includes(h) ? h : (window.innerWidth < 900 ? 'phone' : 'presenter'); render(); }
+function route() { const h0 = hashParts().view; document.body.classList.toggle('kiosk', h0 === 'tv'); document.body.classList.toggle('tvmode', h0 === 'tv'); if (h0 !== 'tv') document.body.classList.remove('tvfull'); S.view = shellRoute(h0); render(); }   // shell.js maps the address to an app
 
 async function sendShot(silent) {
   const st = S.state, t = st && cameraTable(st), g = t && t.game;
@@ -2468,7 +3592,7 @@ document.addEventListener('click', async e => {
   else if (x === 'report') act('report', { result: a.dataset.v });
   else if (x === 'staff') act('staff', { table: a.dataset.t, decision: a.dataset.v });
   else if (x === 'ack') { S.ack[a.dataset.g] = true; render(); }
-  else if (x === 'rejoin') { S.ticket = null; const r = await act('join', { name: S.draft.name || (S.state.me && S.state.me.name), email: S.draft.email, gameType: S.draft.gameType, refOnly: S.draft.refOnly }); if (r && r.ok) toast('Back on the board. Ticket ' + r.me.ticket); }
+  else if (x === 'rejoin') playerRejoin();   // player.js: same name and email, and the password once there's an account
   else if (x === 'done') { S.ticket = null; S.joinOpen = false; if (S.mode === 'live') saveTicket(null); S.sigs.clear(); act('state'); }
   else if (x === 'ask') { const d = $('#askDlg'); if (d.showModal) { d.showModal(); setTimeout(() => $('#askInput').focus(), 50); } }
   else if (x === 'askclose') $('#askDlg').close();
@@ -2493,7 +3617,7 @@ document.addEventListener('click', async e => {
   }
 });
 window.addEventListener('hashchange', route);
-window.addEventListener('resize', () => { if (S.view === 'live' && S.state) fitTV($('#v-live [data-tv]')); });   // the TV canvas follows the screen size
+window.addEventListener('resize', () => { if (S.view === 'live' && S.state) fitTV($('#v-live [data-tv]')); if (S.view === 'biz' && S.state) fitTV($('#v-biz [data-tv]')); });   // the TV canvas follows the screen size
 $('#sTable').addEventListener('change', () => render());
 // ---------- ask the referee (AI agent in n8n: house rules + the live board) ----------
 async function askReferee(q) {
@@ -2514,7 +3638,8 @@ function makeQR() {
   try {
     if (!window.QRCode) return;
     const box = document.createElement('div');
-    new QRCode(box, { text: location.href.split('#')[0] + '#mobile', width: 336, height: 336, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(box, { text: location.href.split('#')[0] + '#mobile&bar=home',   // opens this bar's page in the player app
+       width: 336, height: 336, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
     const c = box.querySelector('canvas'); S.qr = c ? c.toDataURL() : '';
   } catch (err) { S.qr = ''; }
 }

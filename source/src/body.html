@@ -1,40 +1,64 @@
 <header class="top">
-  <div class="wrap">
-    <div class="mark">
-      <svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg>
-      <b>LOOPOOL</b><span>Queue and camera referee</span>
-    </div>
-    <nav class="views" aria-label="Screens">
-      <a href="#presenter" data-view="presenter">All screens</a>
-      <a href="#phone" data-view="phone">Player phone</a>
-      <a href="#venue" data-view="venue">Counter tablet</a>
-      <a href="#live" data-view="live">Bar TV</a>
-      <a href="#camera" data-view="camera">Camera</a>
-    </nav>
-    <button id="modeBtn" class="src" data-act="settings" title="Where the data comes from">Demo data</button>
-  </div>
   <div class="controls">
     <div class="wrap">
       <span class="label">Demo</span>
+      <span class="dim" style="font-size:13px;margin-right:auto">Made-up players. Hidden on a real bar's page.</span>
       <button class="b go" data-act="quick">Quick start</button>
       <button class="b" data-act="reset">Reset</button>
+      <button id="modeBtn" class="src" data-act="settings" title="Where the data comes from">Demo data</button>
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="view" id="v-presenter" aria-label="All screens">
-    <div class="presenter">
-      <div><p class="label cap">Player phone</p><div class="bezel"><div class="screen"><div class="ph" data-phone></div></div></div></div>
-      <div class="col">
-        <div><p class="label cap">Bar TV · Table 1 livestream</p><div data-tv></div></div>
-        <div><p class="label cap">Counter tablet · staff view</p><div data-venue></div></div>
-      </div>
+  <!-- First visit: pick a side. Players and bars each get their own app; the profile menu switches between them. -->
+  <section class="view" id="v-start" aria-label="Welcome">
+    <div class="start">
+      <div class="mark start-mark"><svg width="34" height="31" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg><b>LOOPOOL</b></div>
+      <h1 class="h1">Pool, without<br>the arguments</h1>
+      <p class="lede">A fair queue for the tables and a camera referee for every shot.</p>
+      <button class="start-pick" data-act="role" data-v="player"><b>I'm here to play</b><small>Join a table's queue, see your rating, find bars and events</small></button>
+      <button class="start-pick" data-act="role" data-v="biz"><b>I run a bar</b><small>Set up your bar, start the night, run the tables and events</small></button>
     </div>
   </section>
-  <section class="view solo" id="v-phone" aria-label="Player phone"><div class="bezel"><div class="screen"><div class="ph" data-phone></div></div></div></section>
-  <section class="view" id="v-venue" aria-label="Counter tablet"><div data-venue></div>
-    <section class="staffbox" aria-label="Staff tools">
+
+  <!-- Player app (phone): your details, then Home, Bars, Ranks, Me -->
+  <section class="view" id="v-player" aria-label="Player app">
+    <div class="papp">
+      <div class="papp-body">
+        <div data-pt="welcome" hidden></div>
+        <div data-pt="home"><div data-home></div><div data-invite></div><div class="ph" data-phone hidden></div><div class="watch" data-watch hidden><span class="label">Watch the game on Table 1</span><div data-tv></div></div></div>
+        <div data-pt="bars" hidden></div>
+        <div data-pt="ranks" hidden></div>
+        <div data-pt="me" hidden></div>
+      </div>
+      <nav class="papp-tabs" aria-label="Player app">
+        <button data-act="ptab" data-v="home"><span class="ico" data-ico="play"></span>Home</button>
+        <button data-act="ptab" data-v="bars"><span class="ico" data-ico="bars"></span>Bars</button>
+        <button data-act="ptab" data-v="ranks"><span class="ico" data-ico="ranks"></span>Ranks</button>
+        <button data-act="ptab" data-v="me"><span class="ico" data-ico="me"></span>Me</button>
+      </nav>
+    </div>
+    <div class="scanner" data-scanner hidden><div class="scan-box"><video playsinline muted></video><div class="scan-frame"></div></div>
+      <p class="lede" data-scanmsg>Point your camera at the QR code on the bar's TV.</p><button class="cta line" data-act="p-scanclose">Cancel</button></div>
+  </section>
+
+  <!-- Bar app (tablet or phone): set up once, then start the night, camera, counter -->
+  <section class="view" id="v-biz" aria-label="Bar app">
+    <div class="bapp">
+      <div class="bapp-top"><span class="sign" data-bname>Your bar</span><span data-bchip></span>
+        <div class="bapp-menu"><button class="pbtn" data-act="bmenu" aria-label="Profile and settings" aria-expanded="false"><span class="ico" data-ico="me"></span></button>
+          <div class="menu" data-bmenu hidden>
+            <button data-act="bm-edit">Edit bar profile</button>
+            <button data-act="bm-player">Switch to the player app</button>
+            <button data-act="bm-delete" class="danger">Delete this business</button>
+          </div></div></div>
+      <div data-bs="setup" hidden></div>
+      <div data-bs="home" hidden>
+        <div data-bhome></div>
+        <div data-venue></div>
+        <details class="fixbox"><summary>Fix a game in play <span class="dim">· switch turn, call a foul, undo, declare a winner</span></summary>
+          <section class="staffbox" aria-label="Staff tools">
       <div class="sb-hd"><span class="sign">Staff tools</span>
         <label class="label" for="sTable">Table</label><select id="sTable"><option value="T1">Table 1 (camera)</option><option value="T2">Table 2</option><option value="T3">Table 3</option><option value="T4">Table 4</option></select>
         <span class="sb-now" id="sNow" role="status"></span></div>
@@ -54,8 +78,16 @@
         </div>
       </div>
     </section>
+        </details>
+        <div data-bevents></div>
+      </div>
+      <div data-bs="start" hidden></div>
+      <div data-bs="camera" hidden><div class="bapp-camhd" data-camhd></div><div data-camera></div></div>
+      <div data-bs="tv" hidden><button class="tv-exit" data-act="biz-tvexit">Exit TV view</button><div data-tv></div></div>
+    </div>
   </section>
-  <section class="view" id="v-camera" aria-label="Table camera"><div data-camera></div></section>
+
+  <!-- Bar TV: opened on the bar's TV with #tv -->
   <section class="view" id="v-live" aria-label="Bar TV"><div data-tv></div></section>
 </main>
 <footer class="wrap">Demo venue with made-up players. Shot events come from a recorded game until a camera is connected.</footer>

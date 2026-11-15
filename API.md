@@ -11,6 +11,7 @@ All JSON replies allow any origin (`Access-Control-Allow-Origin: *`). Always cal
 | `/pool-apply` | POST JSON | The workflow itself | Applies a scored shot to the game in a short run of its own (see below). Not for clients. |
 | `/pool-frame?table=T1` | GET | TV, phones | The latest after-shot photo of a table (JPEG). |
 | `/pool-act?a=…&t=…&k=…` | GET | Email buttons | Check in, vote on a foul, confirm a result or leave, from a player's email (keyed per ticket). |
+| `/pool-lookup?url=…` | GET | Bar app set-up page | Auto-fill: reads a bar's website or Google Maps page (schema.org data first, then the AI) and returns `{ ok, profile, found[], error? }` for the bar to check. |
 | `/pool-ask?q=…&ticket=…` | GET | Phone | "Ask the referee": an AI agent answers from the house rules and the live board. `{ ok, answer }` |
 
 ## `/pool?action=…`
@@ -28,6 +29,28 @@ Every call returns `{ ok, error?, now, venue, tables[], queue[], leaderboard[], 
 | `flag` | `ticket` | flags the last shot as a foul (both players then vote) |
 | `vote` | `ticket`, `vote=accept\|dispute` | foul review vote; if players disagree, staff decide |
 | `report` / `confirm` | `ticket`, `result=won\|lost` | tables without a camera: report and confirm the winner |
+
+**Player accounts** (made after a player's first game)
+
+| action | params | effect |
+|---|---|---|
+| `account_create` | `name`, `email`, `hash` (SHA-256 of `loopool|email|password`, made on the phone) | creates the account; replies `{ account: { name, email } }` |
+| `account_login` | `email`, `hash` | checks the password; replies `{ account }` |
+
+Once an email has an account, `join` needs its `hash` too. `join` with the name and email (or ticket) of someone already on the board returns their ticket instead of an error. Any call with `player=<name>` also returns `my`: that player's rating, rank, record and last games.
+
+**Bar setup and events** (`#business` page; players sign up for events from their phone)
+
+| action | params | effect |
+|---|---|---|
+| `venue_save` | `profile` (JSON: `name`, `about`, `address`, `mapsUrl`, `phone`, `website`, `tableCount`, `tableBrand`, `tableSize`, `cues`, `hours: { mon: { open: "16:00", close: "00:00", closed: false }, … }`) | saves the bar profile; the name shows on every screen and in emails |
+| `venue_open` | `open=1\|0`, `event?` (an event id to start) | starts or ends tonight's session; the bar app ends it when the camera is disconnected |
+| `venue_delete` | | deletes the bar profile and its events (the bar app shows the set-up page again) |
+| `event_save` | `event` (JSON: `id?` to edit, `title`, `kind=tournament\|league\|social\|lesson`, `date=YYYY-MM-DD`, `time=HH:MM`, `gameType`, `cap` (0 = no limit), `fee`, `prize`, `about`) | adds or edits a tournament or event night |
+| `event_remove` | `id` | cancels an event |
+| `event_join` / `event_leave` | `id`, `name` (or `ticket`) | a player signs up for, or drops out of, an event |
+
+Every reply also carries `events[]`: upcoming events with `count` and `names` of the players signed up. "Ask the referee" knows the bar's hours and the upcoming events.
 
 **Staff tools** (counter tablet). All take `table` (`T1` … `T4`).
 

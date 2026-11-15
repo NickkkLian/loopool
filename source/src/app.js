@@ -9,7 +9,7 @@ const store = {
 // n8n can serve the page in a sandbox (n8n Cloud always does), where localStorage is blocked.
 // Then the ticket rides in the link instead (#phone&t=A102), so a reload keeps your place in the queue.
 const canStore = (() => { try { localStorage.setItem('loopool.t', '1'); localStorage.removeItem('loopool.t'); return true; } catch (e) { return false; } })();
-const hashParts = () => { const [view, t] = location.hash.replace(/^#/, '').split('&t='); return { view, ticket: t ? decodeURIComponent(t) : null }; };
+const hashParts = () => { const raw = location.hash.replace(/^#/, ''), view = raw.split('&')[0], t = /(?:^|&)t=([^&]*)/.exec(raw), inv = /(?:^|&)invite=([^&]*)/.exec(raw), bar = /(?:^|&)bar=([^&]*)/.exec(raw); return { view, ticket: t ? decodeURIComponent(t[1]) : null, invite: inv ? decodeURIComponent(inv[1]).slice(0, 24) : null, bar: bar ? decodeURIComponent(bar[1]).slice(0, 40) : null }; };
 function loadTicket() { return canStore ? store.get('ticket', null) : hashParts().ticket; }
 function saveTicket(t) {
   if (canStore) { store.set('ticket', t); return; }
@@ -21,12 +21,12 @@ const BALL_COLORS = { 1: '#f2c10f', 2: '#1f4fd0', 3: '#d42a2a', 4: '#6a2f9e', 5:
 const ballColor = b => BALL_COLORS[b > 8 ? b - 8 : b];
 const SCRIPT = buildScript();
 const servedByN8n = /\/pool-app\/?$/.test(location.pathname);
-const VIEWS = ['presenter', 'phone', 'venue', 'live', 'camera'];
+const VIEWS = ['start', 'player', 'biz', 'live'];   // the start screen, the player app, the bar app and the bar TV (see shell.js)
 const S = {
   mode: servedByN8n ? 'live' : store.get('mode', 'demo'),
   base: servedByN8n ? location.origin + location.pathname.replace(/\/pool-app\/?$/, '') : store.get('base', ''),
   ticket: null, state: null, local: null, err: null, busy: false, receivedAt: 0,
-  view: 'presenter', ack: {}, auto: false, lastEv: null, joinOpen: false,
+  view: 'start', ack: {}, auto: false, lastEv: null, joinOpen: false,
   draft: { name: 'Alex', email: '', gameType: '8-ball', refOnly: true },
   sigs: new Map(), tviews: new Map(), qr: '',
 };
@@ -37,6 +37,7 @@ if (S.mode === 'live') { S.ticket = loadTicket(); S.draft.name = ''; }
 async function api(action, params) {
   params = Object.assign({}, params || {});
   if (S.ticket && params.ticket == null && action !== 'join') params.ticket = S.ticket;
+  if (params.player == null && typeof playerProfile === 'function') { const pp = playerProfile(); if (pp && pp.name) params.player = pp.name; }   // your own stats and rank (player.js)
   if (S.mode === 'live') {
     try {
       const u = new URL(S.base.replace(/\/+$/, '') + '/pool');
@@ -338,7 +339,7 @@ const PHONE = {
       ${floorHTML(st, 'you')}
       ${opp ? `<div class="versus"><div class="p"><span class="chalk">${esc(me.name)}</span><small>rating ${me.rating}</small><small>${me.side === 'champ' ? 'holds the table' : 'challenger'}</small></div><span class="x">VS</span><div class="p r"><span class="chalk">${esc(opp.name)}</span><small>rating ${opp.rating}</small><small>${oppSide === 'champ' ? 'holds the table' : 'challenger'}</small>${oppSide === 'champ' && t.streak ? tally(t.streak, st.rules.maxWins) : ''}</div></div>` : ''}
       <p class="lede" style="font-size:14px">Winner stays on.${opp && oppSide === 'champ' ? ' Beat ' + esc(opp.name) + ' to take over ' + esc(t.name) + '.' : ''} If you don't check in, the next name on the board is called.</p>
-      <div class="push"><button class="cta" data-act="checkin">I'm at the table</button></div>`;
+      <div class="push"><button class="cta" data-act="checkin">I'm at the table</button><button class="quiet" data-act="leave">I can't make it: give up my spot</button></div>`;
   },
   seated(st, me, t) {
     const other = t[me.side === 'champ' ? 'challenger' : 'champ'];
@@ -353,6 +354,7 @@ const PHONE = {
     const sides = [me.side, me.side === 'champ' ? 'challenger' : 'champ'];
     const last = g.shots[g.shots.length - 1];
     return `${tableBar(t, `<span class="live-tag">Live${g.shots.length ? ' · shot ' + g.shots.length : ''}${g.rated ? ' · rated' : ''}</span>`)}
+      <p class="lede" style="font-size:16px">You're playing <span class="chalk" style="font-size:22px;color:var(--chalk)">${esc(t[sides[1]].name)}</span>. Tap <b>Ask the referee</b> about a foul, or flag the last shot to review it.</p>
       <div style="display:flex;flex-direction:column;gap:10px">${sides.map(s => playerPanel(st, t, g, s)).join('')}</div>
       ${photoURL(t) ? photoHTML(t) : '<div class="tbl" data-tbl="phone"></div>'}
       <p class="lastshot">${last ? '<span class="dim">Last shot:</span>' + shotLine(last) + '.' : '<span class="dim">Break when you\'re ready.</span> The camera scores from the first shot.'}</p>
@@ -412,8 +414,9 @@ const PHONE = {
         ${r.rated ? `<div class="delta"><b class="${r.delta < 0 ? 'down' : ''}">${r.delta >= 0 ? '+' : ''}${r.delta}</b><span>rating ${before} → ${r.rating}</span></div>` : '<div class="delta"><span>Unrated game</span></div>'}</div>
       ${won && r.stayOn ? `<div class="hold"><div class="hd"><b>You hold ${esc(r.table)}</b>${tally(r.streak, st.rules.maxWins)}</div><span class="dim" style="font-size:14px">Winner stays on. ${next ? `Next on the board: <span class="chalk" style="font-size:20px;color:var(--chalk)">${esc(next.name)}</span>, ${next.present ? 'ready to play.' : 'checking in now.'}` : 'Waiting for the next name on the board.'}</span></div>` : ''}
       ${r.retired ? `<div class="hold"><div class="hd"><b>${st.rules.maxWins} in a row</b>${tally(st.rules.maxWins, st.rules.maxWins)}</div><span class="dim" style="font-size:14px">House rule: the table goes to the next players now. Nice run.</span></div>` : ''}
+      ${st.my ? `<p class="lede" style="font-size:15px">You're <b style="color:var(--chalk)">#${st.my.rank}</b> of ${st.my.of} on the leaderboard, rating <b style="color:var(--chalk)">${st.my.rating}</b>.</p>` : ''}
       <section aria-label="Leaderboard" style="display:flex;flex-direction:column;gap:4px"><span class="label">Tonight's ratings</span>${lbHTML(st, me.pid, 4)}</section>
-      <div class="push">${won && r.stayOn ? `<button class="cta" data-act="ack" data-g="${esc(r.gameId)}">${next ? 'Play ' + esc(next.name) + ' next' : 'Keep the table'}</button>` : `<button class="cta" data-act="rejoin">Put my name back on the board</button><button class="quiet" data-act="done">I'm done for tonight</button>`}</div>`;
+      <div class="push">${won && r.stayOn ? `<button class="cta" data-act="ack" data-g="${esc(r.gameId)}">${next ? 'Play ' + esc(next.name) + ' next' : 'Keep the table'}</button><button class="quiet" data-act="stopplay">Stop playing</button>` : `<button class="cta" data-act="rejoin">Put my name back on the board</button><button class="quiet" data-act="done">I'm done for tonight</button>`}</div>`;
   },
   missed(st, me) {
     return `${topBar(`<span class="mono dim" style="font-size:13px">${esc(me.ticket)}</span>`)}
@@ -551,7 +554,8 @@ function renderMode() {
 }
 function renderControls(st) {
   const me = st && st.me;
-  const bar = document.querySelector('.controls'); if (bar) bar.style.display = S.mode === 'live' ? 'none' : '';   // demo tools: on demo data only, never on a real venue
+  const bar = document.querySelector('.controls'); if (bar) bar.style.display = servedByN8n ? 'none' : '';   // demo tools: never on a real venue's page
+  $$('[data-act="quick"], [data-act="reset"]').forEach(b => { b.hidden = S.mode === 'live'; });   // demo data only
   $('[data-act="quick"]').disabled = !!(me && ['waiting', 'called', 'playing'].includes(me.status));
 }
 function render() {
@@ -561,11 +565,9 @@ function render() {
   const st = S.state; renderControls(st);
   if (!st) return;
   const v = S.view;
-  if (v === 'presenter' || v === 'phone') renderPhone($('#v-' + v + ' [data-phone]'), st, v);
-  if (v === 'presenter' || v === 'live') renderTV($('#v-' + v + ' [data-tv]'), st, v);
-  if (v === 'presenter' || v === 'venue') renderVenue($('#v-' + v + ' [data-venue]'), st);
-  if (v === 'venue') renderStaff(st);
-  if (v === 'camera') { const el = $('#v-camera [data-camera]'); if (el && !el.dataset.mounted && window.CameraView) { el.dataset.mounted = '1'; window.CameraView.mount(el, { base: S.mode === 'live' ? S.base : '', table: 'T1', tables: () => ((S.state && S.state.tables) || []).map(t => ({ id: t.id, name: t.name, ref: t.ref })) }); } }
+  if (v === 'player') renderPlayerApp(st);                 // player.js
+  if (v === 'biz') renderBizApp(st);                       // business.js
+  if (v === 'live') renderTV($('#v-live [data-tv]'), st, 'live');
 }
 // ---------- staff tools on the counter tablet (start match, switch turn, foul, undo, next match, winner, group, clear) ----------
 function renderStaff(st) {
@@ -623,7 +625,7 @@ async function staffAct(a) {
 }
 // #tv = the bar TV on its own, full screen; #mobile = the player phone on its own. Neither shows the site header,
 // the test buttons (Reset!) or the footer, so the QR code and emails link to #mobile.
-function route() { const h0 = hashParts().view, h = h0 === 'tv' ? 'live' : h0 === 'mobile' ? 'phone' : h0; document.body.classList.toggle('kiosk', h0 === 'tv' || h0 === 'mobile' || h0 === 'camera'); document.body.classList.toggle('tvmode', h0 === 'tv'); if (h0 !== 'tv') document.body.classList.remove('tvfull'); S.view = VIEWS.includes(h) ? h : (window.innerWidth < 900 ? 'phone' : 'presenter'); render(); }
+function route() { const h0 = hashParts().view; document.body.classList.toggle('kiosk', h0 === 'tv'); document.body.classList.toggle('tvmode', h0 === 'tv'); if (h0 !== 'tv') document.body.classList.remove('tvfull'); S.view = shellRoute(h0); render(); }   // shell.js maps the address to an app
 
 async function sendShot(silent) {
   const st = S.state, t = st && cameraTable(st), g = t && t.game;
@@ -655,7 +657,7 @@ document.addEventListener('click', async e => {
   else if (x === 'report') act('report', { result: a.dataset.v });
   else if (x === 'staff') act('staff', { table: a.dataset.t, decision: a.dataset.v });
   else if (x === 'ack') { S.ack[a.dataset.g] = true; render(); }
-  else if (x === 'rejoin') { S.ticket = null; const r = await act('join', { name: S.draft.name || (S.state.me && S.state.me.name), email: S.draft.email, gameType: S.draft.gameType, refOnly: S.draft.refOnly }); if (r && r.ok) toast('Back on the board. Ticket ' + r.me.ticket); }
+  else if (x === 'rejoin') playerRejoin();   // player.js: same name and email, and the password once there's an account
   else if (x === 'done') { S.ticket = null; S.joinOpen = false; if (S.mode === 'live') saveTicket(null); S.sigs.clear(); act('state'); }
   else if (x === 'ask') { const d = $('#askDlg'); if (d.showModal) { d.showModal(); setTimeout(() => $('#askInput').focus(), 50); } }
   else if (x === 'askclose') $('#askDlg').close();
@@ -680,7 +682,7 @@ document.addEventListener('click', async e => {
   }
 });
 window.addEventListener('hashchange', route);
-window.addEventListener('resize', () => { if (S.view === 'live' && S.state) fitTV($('#v-live [data-tv]')); });   // the TV canvas follows the screen size
+window.addEventListener('resize', () => { if (S.view === 'live' && S.state) fitTV($('#v-live [data-tv]')); if (S.view === 'biz' && S.state) fitTV($('#v-biz [data-tv]')); });   // the TV canvas follows the screen size
 $('#sTable').addEventListener('change', () => render());
 // ---------- ask the referee (AI agent in n8n: house rules + the live board) ----------
 async function askReferee(q) {
@@ -701,7 +703,8 @@ function makeQR() {
   try {
     if (!window.QRCode) return;
     const box = document.createElement('div');
-    new QRCode(box, { text: location.href.split('#')[0] + '#mobile', width: 336, height: 336, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(box, { text: location.href.split('#')[0] + '#mobile&bar=home',   // opens this bar's page in the player app
+       width: 336, height: 336, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
     const c = box.querySelector('canvas'); S.qr = c ? c.toDataURL() : '';
   } catch (err) { S.qr = ''; }
 }

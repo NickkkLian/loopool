@@ -14,13 +14,13 @@ In most bars the pool queue is coins on the rail or a name on a chalkboard, and 
 
 ## Screens
 
-| Screen | Address | Used by |
+Players and bars get separate apps. A first visit asks "I'm here to play" or "I run a bar"; the profile menu switches sides.
+
+| App | Address | Used by |
 |---|---|---|
-| Player phone | `/webhook/pool-app#mobile` | Players (the QR code on the TV opens it) |
+| Player app | `/webhook/pool-app#play` (the bar's QR code opens `#mobile&bar=home`) | Players, on their phone. Enter your name and email → **Home**: the best bar right now (closest, shortest wait), scan a QR code, your rating and games → a bar's page → **Join the queue** → your place, the wait and the live game → called (3-minute timer and an email naming your table and opponent) → playing (ask the referee, flag a foul) → result (new rating and rank; play again or stop). After the first game you add a password to keep playing. **Bars**, **Ranks** and **Me** are tabs. |
+| Bar app | `/webhook/pool-app#bar` | Owners and staff, on a tablet or phone. Register the bar once (auto-filled from a website or Google Maps link). Home page: the bar's facts, events, **Start a game** (by hand, from the queue, or with the camera → camera set-up → the bar TV view, until **Exit TV view**). The profile icon edits the bar (already filled in), switches to the player app or deletes the bar. |
 | Bar TV | `/webhook/pool-app#tv` | The screen above the bar |
-| Counter tablet | `/webhook/pool-app#venue` | Staff: tables, queue, staff tools |
-| Table camera | `/webhook/pool-app#camera` | A phone or laptop mounted above the table |
-| All screens | `/webhook/pool-app` | Demos and testing |
 
 `index.html` is the same app in one file, running on demo data in any browser, with no n8n needed.
 
