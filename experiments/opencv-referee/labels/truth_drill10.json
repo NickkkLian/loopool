@@ -1,0 +1,486 @@
+{
+ "video": "creglia_drill10.mp4",
+ "shots": [
+  {
+   "t_start": 8.75,
+   "t_end": 13.03,
+   "potted": [
+    1
+   ],
+   "scratch": false,
+   "first_contact": 1,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). bottom-right pocket (ball seen entering ~t=9.6). Player at top-centre, arm and cue over the upper-middle of the cloth during aim and contact; balls clear.",
+   "potted_at": 9.6
+  },
+  {
+   "t_start": 16.95,
+   "t_end": 20.97,
+   "potted": [
+    2
+   ],
+   "scratch": false,
+   "first_contact": 2,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). top-left pocket (ball seen entering ~t=17.9). Player at bottom-right; arm and cue over the lower-right of the table, clear of the balls.",
+   "potted_at": 17.9
+  },
+  {
+   "t_start": 25.28,
+   "t_end": 27.93,
+   "potted": [
+    3
+   ],
+   "scratch": false,
+   "first_contact": 3,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). bottom-right pocket (ball seen entering ~t=25.9). Arm and cue at top-left, stick over the upper left column area at aim; clear at contact.",
+   "potted_at": 25.9
+  },
+  {
+   "t_start": 31.58,
+   "t_end": 35.97,
+   "potted": [
+    4
+   ],
+   "scratch": false,
+   "first_contact": 4,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). top-left pocket (ball seen entering ~t=32.0). Cue stick lies at bottom-right; no arm over the balls.",
+   "potted_at": 32.0
+  },
+  {
+   "t_start": 39.42,
+   "t_end": 44.87,
+   "potted": [
+    5
+   ],
+   "scratch": false,
+   "first_contact": 5,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). bottom-right pocket (ball seen entering ~t=40.0). Arm and cue at top-centre over the upper cloth through the shot (not on the balls).",
+   "potted_at": 40.0
+  },
+  {
+   "t_start": 48.75,
+   "t_end": 53.77,
+   "potted": [
+    6
+   ],
+   "scratch": false,
+   "first_contact": 6,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). top-left pocket (ball seen entering ~t=49.4). Cue stick at bottom-centre only.",
+   "potted_at": 49.4
+  },
+  {
+   "t_start": 57.88,
+   "t_end": 63.43,
+   "potted": [
+    7
+   ],
+   "scratch": false,
+   "first_contact": 7,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). top-right pocket (ball seen entering ~t=59.0). Cue stick at bottom-centre only. Cue ball goes between the right-column balls (9 adjacent above the target); only 7 moved.",
+   "potted_at": 59.0
+  },
+  {
+   "t_start": 67.02,
+   "t_end": 71.13,
+   "potted": [
+    8
+   ],
+   "scratch": false,
+   "first_contact": 8,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). top-left pocket (ball seen entering ~t=67.5). Cue stick at bottom-left only.",
+   "potted_at": 67.5
+  },
+  {
+   "t_start": 75.05,
+   "t_end": 78.87,
+   "potted": [
+    9
+   ],
+   "scratch": false,
+   "first_contact": 9,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). top-right pocket (ball seen entering ~t=75.8). Arm over the lower-left cloth during aim, hand off the balls at contact.",
+   "potted_at": 75.8
+  },
+  {
+   "t_start": 83.02,
+   "t_end": 85.83,
+   "potted": [
+    10
+   ],
+   "scratch": false,
+   "first_contact": 10,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). bottom-left pocket (ball seen entering ~t=83.7). Cue stick/hand at top-centre only.",
+   "potted_at": 83.7
+  },
+  {
+   "t_start": 89.85,
+   "t_end": 93.93,
+   "potted": [
+    11
+   ],
+   "scratch": false,
+   "first_contact": 11,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). top-right pocket (ball seen entering ~t=90.2). Arm at bottom-left during aim; not found by my first automatic pass (cue ball hidden/moving fast), found by eye; red goes out the top-right.",
+   "potted_at": 90.2
+  },
+  {
+   "t_start": 97.88,
+   "t_end": 102.6,
+   "potted": [
+    12
+   ],
+   "scratch": false,
+   "first_contact": 12,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). bottom-left pocket (ball seen entering ~t=98.7). Hand and cue at top-centre. Cue ball rebounds next to 14 (green) but 14 does not move.",
+   "potted_at": 98.7
+  },
+  {
+   "t_start": 106.45,
+   "t_end": 112.0,
+   "potted": [
+    13
+   ],
+   "scratch": false,
+   "first_contact": 13,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). top-right pocket (ball seen entering ~t=107.35). Arm and cue over the lower-left cloth at aim and contact.",
+   "potted_at": 107.35
+  },
+  {
+   "t_start": 116.18,
+   "t_end": 120.55,
+   "potted": [
+    14
+   ],
+   "scratch": false,
+   "first_contact": 14,
+   "notes": "Run 1 (rack: left column 2,4,...,14 top to bottom, right column 13,11,...,1 top to bottom). bottom-left pocket (ball seen entering ~t=117.0). Player at top-right, arm diagonal over the upper table at aim and contact (not on the ball). Video cuts to run 2 at 120.6 while the cue ball is still creeping.",
+   "potted_at": 117.0
+  },
+  {
+   "t_start": 124.52,
+   "t_end": 129.93,
+   "potted": [
+    1
+   ],
+   "scratch": false,
+   "first_contact": 1,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the right column (pink-set yellow 1, top of the column)). top-right pocket (ball seen entering ~t=125.4). Arm and cue diagonal over the lower-middle of the cloth at aim and contact; the balls are clear.",
+   "potted_at": 125.4
+  },
+  {
+   "t_start": 133.68,
+   "t_end": 137.4,
+   "potted": [
+    1
+   ],
+   "scratch": false,
+   "first_contact": 1,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the left column (standard-colour set yellow 1, bottom of the column)). bottom-left pocket (ball seen entering ~t=134.7). Arm and cue over the top-right; clear of the balls.",
+   "potted_at": 134.7
+  },
+  {
+   "t_start": 141.18,
+   "t_end": 142.9,
+   "potted": [
+    2
+   ],
+   "scratch": false,
+   "first_contact": 2,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the right column (pink-set blue 2)). top-right pocket (ball seen entering ~t=142.0). Arm along the bottom-left rail at aim; hand off the balls.",
+   "potted_at": 142.0
+  },
+  {
+   "t_start": 146.78,
+   "t_end": 150.87,
+   "potted": [
+    2
+   ],
+   "scratch": false,
+   "first_contact": 2,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the left column (standard-set blue 2)). bottom-left pocket (ball seen entering ~t=147.4). Arm and cue at top-right; clear.",
+   "potted_at": 147.4
+  },
+  {
+   "t_start": 154.98,
+   "t_end": 160.17,
+   "potted": [
+    3
+   ],
+   "scratch": false,
+   "first_contact": 3,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the right column (pink-set red 3)). top-right pocket (ball seen entering ~t=155.7). Arm and cue along the bottom-left rail; clear of balls.",
+   "potted_at": 155.7
+  },
+  {
+   "t_start": 163.55,
+   "t_end": 166.67,
+   "potted": [
+    3
+   ],
+   "scratch": false,
+   "first_contact": 3,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the left column (standard-set red 3)). bottom-left pocket (ball seen entering ~t=164.3). Arm and cue at top-centre; clear.",
+   "potted_at": 164.3
+  },
+  {
+   "t_start": 171.82,
+   "t_end": 177.27,
+   "potted": [
+    4
+   ],
+   "scratch": false,
+   "first_contact": 4,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the right column (pink-set pink 4)). bottom-right pocket (ball seen entering ~t=173.9). Arm horizontal from the left rail at aim, over the left column's upper balls (orange 5, maroon 7, green 6) but not touching; clear at contact. Pink travels down the column past purple 5 (no contact seen).",
+   "potted_at": 173.9
+  },
+  {
+   "t_start": 182.38,
+   "t_end": 188.43,
+   "potted": [
+    4
+   ],
+   "scratch": false,
+   "first_contact": 4,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the left column (standard-set purple 4)). bottom-left pocket (ball seen entering ~t=183.3). Arm and cue from the right at aim; clear at contact.",
+   "potted_at": 183.3
+  },
+  {
+   "t_start": 192.68,
+   "t_end": 197.17,
+   "potted": [
+    5
+   ],
+   "scratch": false,
+   "first_contact": 5,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the right column (pink-set purple 5)). bottom-right pocket (ball seen entering ~t=194.9). Stick at top-centre only. Cue ball passes within about two ball widths of green 6 after contact but green does not move.",
+   "potted_at": 194.9
+  },
+  {
+   "t_start": 201.22,
+   "t_end": 206.33,
+   "potted": [
+    5
+   ],
+   "scratch": false,
+   "first_contact": 5,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the left column (standard-set orange 5)). top-left pocket (ball seen entering ~t=201.9). Arm and cue at bottom-right; cue stick tip over the lower right cloth near orange 7 (pink-set) at aim but nothing moved.",
+   "potted_at": 201.9
+  },
+  {
+   "t_start": 211.12,
+   "t_end": 217.17,
+   "potted": [
+    6
+   ],
+   "scratch": false,
+   "first_contact": 6,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the right column (pink-set green 6)). bottom-right pocket (ball seen entering ~t=212.35). Arm and cue along the left rail; clear of the balls.",
+   "potted_at": 212.35
+  },
+  {
+   "t_start": 221.42,
+   "t_end": 226.87,
+   "potted": [
+    6
+   ],
+   "scratch": false,
+   "first_contact": 6,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the left column (standard-set green 6)). top-left pocket (ball seen entering ~t=222.0). Arm and cue from the right over the middle of the cloth at aim and contact; not on the balls.",
+   "potted_at": 222.0
+  },
+  {
+   "t_start": 231.18,
+   "t_end": 236.43,
+   "potted": [
+    7
+   ],
+   "scratch": false,
+   "first_contact": 7,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the right column (pink-set orange 7)). bottom-right pocket (ball seen entering ~t=231.7). Player at top-left: arm and cue over the left column's top (maroon 7 partly hidden by the arm at aim); clear at contact.",
+   "potted_at": 231.7
+  },
+  {
+   "t_start": 240.58,
+   "t_end": 244.3,
+   "potted": [
+    7
+   ],
+   "scratch": false,
+   "first_contact": 7,
+   "notes": "Run 2 (two sets of solids 1-7: left column standard colours top to bottom 7,6,5,4,3,2,1; right column pink-set colours top to bottom 1,2,3,4,5,6,7, so every number appears twice: this is the left column (standard-set maroon 7)). top-left pocket (ball seen entering ~t=241.1). Arm and cue from the right across the top rail area; clear at contact. Video cuts to run 3 at 244.3.",
+   "potted_at": 241.1
+  },
+  {
+   "t_start": 247.92,
+   "t_end": 253.07,
+   "potted": [
+    1
+   ],
+   "scratch": false,
+   "first_contact": 1,
+   "notes": "Run 3 (same rack as run 1). bottom-right pocket (ball seen entering ~t=248.7). Player at top-centre: head/arm over the upper-middle cloth and cue stick pointing at the lower right; balls visible. First shot of run 3.",
+   "potted_at": 248.7
+  },
+  {
+   "t_start": 256.78,
+   "t_end": 261.17,
+   "potted": [
+    2
+   ],
+   "scratch": false,
+   "first_contact": 2,
+   "notes": "Run 3 (same rack as run 1). top-left pocket (ball seen entering ~t=257.7). Player at the bottom: head and arm up over the lower-centre cloth, cue pointing up-left; balls visible.",
+   "potted_at": 257.7
+  },
+  {
+   "t_start": 264.98,
+   "t_end": 268.57,
+   "potted": [
+    3
+   ],
+   "scratch": false,
+   "first_contact": 3,
+   "notes": "Run 3 (same rack as run 1). bottom-right pocket (ball seen entering ~t=265.8). Arm at top-centre over the upper cloth; balls visible.",
+   "potted_at": 265.8
+  },
+  {
+   "t_start": 272.18,
+   "t_end": 276.63,
+   "potted": [
+    4
+   ],
+   "scratch": false,
+   "first_contact": 4,
+   "notes": "Run 3 (same rack as run 1). top-left pocket (ball seen entering ~t=272.9). Cue stick lies at bottom-centre only.",
+   "potted_at": 272.9
+  },
+  {
+   "t_start": 278.52,
+   "t_end": 284.3,
+   "potted": [
+    5
+   ],
+   "scratch": false,
+   "first_contact": 5,
+   "notes": "Run 3 (same rack as run 1). bottom-right pocket (ball seen entering ~t=279.2). Arm and cue at top-left over the upper-left cloth; clear of the balls.",
+   "potted_at": 279.2
+  },
+  {
+   "t_start": 287.78,
+   "t_end": 291.7,
+   "potted": [
+    6
+   ],
+   "scratch": false,
+   "first_contact": 6,
+   "notes": "Run 3 (same rack as run 1). top-left pocket (ball seen entering ~t=288.3). Hand and cue at bottom-centre only.",
+   "potted_at": 288.3
+  },
+  {
+   "t_start": 295.85,
+   "t_end": 301.7,
+   "potted": [
+    7
+   ],
+   "scratch": false,
+   "first_contact": 7,
+   "notes": "Run 3 (same rack as run 1). top-right pocket (ball seen entering ~t=296.75). Player at bottom-left: arm and body over the lower-left cloth, partly hiding the bottom of the left column (14, 12) at aim and contact. Target 7 clearly visible.",
+   "potted_at": 296.75
+  },
+  {
+   "t_start": 305.25,
+   "t_end": 309.33,
+   "potted": [
+    8
+   ],
+   "scratch": false,
+   "first_contact": 8,
+   "notes": "Run 3 (same rack as run 1). top-left pocket (ball seen entering ~t=305.7). Cue stick at bottom-centre only.",
+   "potted_at": 305.7
+  },
+  {
+   "t_start": 313.25,
+   "t_end": 314.67,
+   "potted": [
+    9
+   ],
+   "scratch": false,
+   "first_contact": 9,
+   "notes": "Run 3 (same rack as run 1). top-right pocket (ball seen entering ~t=313.95). Arm at bottom-left over the lower-left cloth at aim; clear of the target.",
+   "potted_at": 313.95
+  },
+  {
+   "t_start": 317.98,
+   "t_end": 324.77,
+   "potted": [
+    10
+   ],
+   "scratch": false,
+   "first_contact": 10,
+   "notes": "Run 3 (same rack as run 1). bottom-left pocket (ball seen entering ~t=318.5). Arm and cue from the right across the middle of the cloth; the cue ball travels left along the cue line; balls visible.",
+   "potted_at": 318.5
+  },
+  {
+   "t_start": 328.92,
+   "t_end": 334.3,
+   "potted": [
+    11
+   ],
+   "scratch": false,
+   "first_contact": 11,
+   "notes": "Run 3 (same rack as run 1). top-right pocket (ball seen entering ~t=329.9). Cue stick lies at bottom-centre only.",
+   "potted_at": 329.9
+  },
+  {
+   "t_start": 338.12,
+   "t_end": 342.03,
+   "potted": [
+    12
+   ],
+   "scratch": false,
+   "first_contact": 12,
+   "notes": "Run 3 (same rack as run 1). bottom-left pocket (ball seen entering ~t=338.5). Player at top-right: arm along the cue line from the right; balls visible.",
+   "potted_at": 338.5
+  },
+  {
+   "t_start": 345.85,
+   "t_end": 350.13,
+   "potted": [
+    13
+   ],
+   "scratch": false,
+   "first_contact": 13,
+   "notes": "Run 3 (same rack as run 1). top-right pocket (ball seen entering ~t=346.35). Arm at the left rail; cue ball hits the lone right-column ball 13.",
+   "potted_at": 346.35
+  },
+  {
+   "t_start": 354.28,
+   "t_end": 359.23,
+   "potted": [
+    14
+   ],
+   "scratch": false,
+   "first_contact": 14,
+   "notes": "Run 3 (same rack as run 1). bottom-left pocket (ball seen entering ~t=355.0). Player at top-right; arm diagonal across the upper table; clear of the balls at contact. Last shot: video ends at 359.8 with all balls but the cue ball off the table.",
+   "potted_at": 355.0
+  }
+ ],
+ "hand_moves": [
+  {
+   "t": "0-5.9",
+   "what": "Title card 'Rules' over the first ~6 s; the 14 balls are already racked in two columns and the cue ball is placed (ball in hand per the card). Not shown how they were placed."
+  },
+  {
+   "t": 120.6,
+   "what": "Hard video cut between run 1 and run 2: a different rack appears (two sets of solids 1-7, standard colours in the left column and pink-set colours in the right column) and the cue ball is placed. The re-rack is not shown. Balls change identity/colour scheme at this point."
+  },
+  {
+   "t": 244.3,
+   "what": "Hard video cut between run 2 and run 3: back to the run 1 rack (left evens, right odds, with 8 and the stripes) and a placed cue ball. The re-rack is not shown."
+  },
+  {
+   "t": "between shots",
+   "what": "No ball was moved by hand between shots within a run: the cue ball rests where it stopped and the next shot is taken from there (the cue ball's rest position before each shot matches its stop position of the previous shot, checked within about 1 px at 640 wide, except across the two cuts)."
+  }
+ ],
+ "labeller_notes": "Three runs of the same drill (shoot balls in order, one ball per shot into any pocket, cue ball never in hand after the first shot), 14 shots each: run 1 t=8.75..120.6, run 2 t=124.5..244.3, run 3 t=247.9..359.8. 42 shots, 42 balls potted, no scratch, no foul. Racks: runs 1 and 3 have 14 balls (1-14; 15 is not on the table): left column from top 2,4,6,8,10,12,14, right column from top 13,11,9,7,5,3,1. Shot order is 1,2,3,...,14, i.e. alternating right column (from its bottom end) and left column (from its top end). Run 2 is different: two complete sets of solids 1-7 (left column in standard colours: 7 maroon, 6 green, 5 orange, 4 purple, 3 red, 2 blue, 1 yellow from the top; right column in the pink-set colours: 1 yellow, 2 blue, 3 red, 4 pink, 5 purple, 6 green, 7 orange from the top), so numbers repeat and 'potted' alone cannot say which ball; the notes name the column. The order in run 2 is right-column ball n then left-column ball n for n=1..7. Colour mapping: the pink-set colours (4 pink, 5 purple, 7 orange, with 12 pink stripe, 13 purple stripe, 15 orange stripe) match drill08's balls; the brief's list (4 purple, 5 orange, 7 maroon) matches only the left column of run 2. Stripes 9-14 show mostly dark/black rims from above. First contact: in every shot only the target ball moved after the cue ball reached it and the cue ball was seen adjacent to the target at 5 fps (0.2 s) spacing, not frame by frame; no shot's first contact is unsure in my judgement, but the exact contact frame is not stated and pocket names are approximate. t_start = first frame the cue ball moves (cue-ball colour-blob tracker on 640x360 frames, checked by eye on 5 fps contact sheets, about +/-0.1 s). t_end = first time the cue ball has moved less than ~1 px (of 1280) over 0.5 s after the pot; slow creeping can continue a little longer. potted_at is an extra field: approx time the ball is first seen in or at the pocket (+/-0.2 s). Shot 11 of run 1 (t=89.85) was missed by my first automatic onset pass and found by eye. Everything was labelled in one pass from the contact sheets; no frame-by-frame check beyond them."
+}

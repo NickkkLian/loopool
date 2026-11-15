@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pool Referee · Table Display</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0f1412;color:#e8efe9}
+header{padding:14px 20px;border-bottom:1px solid #1f2a25;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:18px}h1 span{color:#3ecf8e}
+header input{padding:7px 9px;border-radius:8px;border:1px solid #2c3b34;background:#0f1412;color:#e8efe9;font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:#6f857b;display:inline-block}.dot.on{background:#3ecf8e}
+main{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:16px;padding:16px 20px;max-width:1400px;margin:auto}
+.card{background:#16201b;border:1px solid #23302a;border-radius:14px;padding:16px;margin-bottom:16px}
+h2{margin:0 0 12px;font-size:14px;color:#9fb8ad;font-weight:600}
+.meta{font-size:13px;color:#8aa197}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.pl{background:#0f1412;border:2px solid #23302a;border-radius:14px;padding:14px}
+.pl.on{border-color:#3ecf8e;box-shadow:0 0 0 4px rgba(62,207,142,.12)}
+.pl .n{font-size:24px;font-weight:800}.pl .r{font-size:13px;color:#8aa197}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:#22302a;color:#cfe3d9;margin-top:8px}
+.tag.shoot{background:#3ecf8e;color:#06140d}
+.balls{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}.b{width:18px;height:18px;border-radius:50%;background:#2a3832}.b.solids{background:#f59e0b}.b.stripes{background:repeating-linear-gradient(0deg,#fff 0 5px,#60a5fa 5px 13px)}
+.reason{margin-top:12px;font-size:15px}
+.bih{margin-top:10px;background:#3a321a;color:#facc15;padding:8px 12px;border-radius:10px;font-weight:700;font-size:14px}
+.win{font-size:28px;font-weight:800;margin:6px 0}
+.shot{display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:center}
+.ring{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;font-size:24px;font-weight:800;border:5px solid #2c3b34}
+.tip{background:#1c2b24;border-left:3px solid #3ecf8e;padding:8px 10px;margin-top:8px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px 5px;text-align:left;border-bottom:1px solid #22302a}th{color:#8aa197;font-weight:500;font-size:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select{padding:8px 10px;border-radius:8px;border:1px solid #2c3b34;background:#0f1412;color:#e8efe9;font-size:13px}
+button{padding:8px 12px;border:1px solid #2f4a3d;border-radius:9px;background:transparent;color:#cfe3d9;font-weight:600;font-size:13px;cursor:pointer}
+button.primary{background:#3ecf8e;border-color:#3ecf8e;color:#06140d}button.danger{border-color:#5a2a2a;color:#ff7b72}
+.q{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1f2a25;font-size:14px}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#3a1d1d;color:#ffb4ae;padding:10px 16px;border-radius:10px;font-size:13px;display:none;max-width:90vw}
+.called{background:#173326;color:#3ecf8e;padding:10px 12px;border-radius:10px;font-weight:700;margin-bottom:10px}
+.hist div{padding:6px 0;border-bottom:1px solid #1f2a25;font-size:13px}
+@media(max-width:900px){main{grid-template-columns:1fr}.score{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎱 Pool Referee · <span>Table <span id="tName">T1</span></span></h1>
+  <span class="dot" id="live"></span>
+  <span style="flex:1"></span>
+  <input id="base" placeholder="https://YOUR-NAME.app.n8n.cloud/webhook" style="width:320px">
+  <input id="table" value="T1" style="width:70px">
+</header>
+<main>
+  <section>
+    <div class="card" id="board"><span class="meta">Enter the n8n webhook base URL above.</span></div>
+    <div class="card"><h2>Last shot</h2><div id="last" class="meta">No shots yet.</div></div>
+    <div class="card"><h2>Recent shots</h2><div class="hist" id="hist"></div></div>
+  </section>
+  <section>
+    <div class="card">
+      <h2>Queue</h2>
+      <div id="called"></div>
+      <div id="queue" class="meta">Nobody waiting.</div>
+      <div class="row" style="margin-top:10px"><input id="qName" placeholder="Your name" style="flex:1"><button class="primary" id="qJoin">Join queue</button></div>
+    </div>
+    <div class="card">
+      <h2>Leaderboard</h2>
+      <table><thead><tr><th>#</th><th>Player</th><th>Rating</th><th>W-L</th><th>Avg shot</th></tr></thead><tbody id="lb"></tbody></table>
+    </div>
+    <div class="card">
+      <h2>Staff controls</h2>
+      <div class="row"><input id="p1" placeholder="Player 1 (breaks)" style="flex:1;min-width:110px"><input id="p2" placeholder="Player 2" style="flex:1;min-width:110px">
+        <select id="gt"><option value="8">8-ball</option><option value="9">9-ball</option><option value="10">10-ball</option></select>
+        <button class="primary" id="start">Start match</button></div>
+      <div class="row" style="margin-top:10px">
+        <button data-a="switch_turn">Switch turn</button><button data-a="foul">Call foul</button><button data-a="undo">Undo last</button><button data-a="next_match">Start next match</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <select id="who"></select><button id="endBtn">Declare winner</button>
+        <select id="grp"><option value="solids">solids</option><option value="stripes">stripes</option></select><button id="grpBtn">Set group</button>
+        <button class="danger" data-a="reset_table">Reset table</button>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem('pr.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('pr.' + k, JSON.stringify(v)); } catch (e) {} } };
+$('base').value = store.get('base', ''); $('table').value = store.get('table', 'T1');
+$('base').onchange = () => { store.set('base', base()); refresh(); };
+$('table').onchange = () => { store.set('table', tableId()); refresh(); };
+const base = () => $('base').value.trim().replace(/\/+$/, '').replace(/\/(pool-[a-z]+)$/, '');
+const tableId = () => ($('table').value.trim() || 'T1').toUpperCase();
+function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', 4000); }
+const color = s => s >= 85 ? '#3ecf8e' : s >= 70 ? '#a3e635' : s >= 50 ? '#facc15' : '#ff7b72';
+
+// -------- API helpers (form-encoded POST = no CORS preflight) --------
+async function api(path, params) {
+  if (!base()) throw new Error('Set the base URL first.');
+  const opts = params ? { method: 'POST', body: new URLSearchParams({ table: tableId(), ...params }) } : {};
+  const url = params ? `${base()}/${path}` : `${base()}/${path}?table=${encodeURIComponent(tableId())}`;
+  const r = await fetch(url, opts); const d = await r.json();
+  if (!d.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+async function act(path, params) { try { render(await api(path, params)); } catch (e) { toast(e.message); } }
+
+// -------- rendering --------
+function render(d) {
+  $('live').className = 'dot on'; $('tName').textContent = tableId();
+  const t = d.table || {}, m = t.match;
+  // scoreboard
+  if (!m) $('board').innerHTML = '<h2>Scoreboard</h2><div class="meta">No match on this table. Start one from Staff controls, or join the queue.</div>';
+  else {
+    const ballRow = p => p.balls_left == null ? '' : `<div class="balls">${Array.from({ length: 7 }, (_, i) => `<span class="b ${i < p.balls_left ? p.group || '' : ''}"></span>`).join('')}</div>`;
+    const cards = m.players.map(p => `<div class="pl ${p.is_shooting ? 'on' : ''}"><div class="n">${esc(p.name)}</div><div class="r">Rating ${p.rating}${m.rating_delta && m.rating_delta[p.name] != null ? ` (${m.rating_delta[p.name] > 0 ? '+' : ''}${m.rating_delta[p.name]})` : ''}</div>
+      ${p.is_shooting ? '<span class="tag shoot">🎯 SHOOTING</span>' : ''} ${p.group ? `<span class="tag">${esc(p.group)} · ${p.balls_left} left</span>` : (m.game_type === '8-ball' ? '<span class="tag">open table</span>' : '')}${ballRow(p)}</div>`).join('');
+    $('board').innerHTML = `<h2>Scoreboard</h2><div class="meta">${esc(m.game_type)} · shot ${m.shots_count} · ${m.status}</div>
+      ${m.status === 'finished' ? `<div class="win">🏆 ${esc(m.winner)} wins</div><div class="meta">${esc(m.end_reason || '')}</div>` : ''}
+      <div class="score">${cards}</div>
+      ${m.ball_in_hand ? `<div class="bih">✋ Ball in hand for ${esc(m.shooter)}</div>` : ''}
+      ${m.status === 'playing' ? `<div class="reason">${esc(m.last_reason || '')}</div>` : (t.next_up ? `<div class="reason">Next up: <b>${esc(t.next_up)}</b> · press “Start next match”</div>` : '')}`;
+    $('who').innerHTML = m.players.map(p => `<option>${esc(p.name)}</option>`).join('');
+  }
+  // last shot
+  const s = t.last_shot;
+  $('last').innerHTML = !s ? '<span class="meta">No shots yet.</span>' : `<div class="shot"><div class="ring" style="border-color:${color(s.score)};color:${color(s.score)}">${s.score}</div>
+    <div><b>${esc(s.player)}</b> · ${esc(s.grade)} <span class="meta">· ${new Date(s.at).toLocaleTimeString()}</span>
+    <div class="meta">Potted: ${esc((s.potted || []).join(', ') || 'nothing')}${s.foul ? ' · <span style="color:#ff7b72">Foul: ' + esc(s.foul_reason || 'yes') + '</span>' : ''}${s.needs_review ? ' · <span style="color:#facc15">check this shot</span>' : ''}</div>
+    <div style="font-size:14px;margin-top:4px">${esc(s.reason || s.observations || '')}</div>${s.tip ? `<div class="tip">💡 ${esc(s.tip)}</div>` : ''}</div></div>`;
+  $('hist').innerHTML = (t.recent_shots || []).map(x => `<div><b style="color:${color(x.score)}">${x.score}</b> · ${esc(x.player)} · ${esc(x.reason || x.grade)} <span class="meta">${new Date(x.at).toLocaleTimeString()}</span></div>`).join('') || '<div class="meta">No shots yet.</div>';
+  // queue
+  $('called').innerHTML = t.called ? `<div class="called">📣 ${esc(t.called.name)}, it’s your turn to play!</div>` : '';
+  $('queue').innerHTML = (t.queue || []).map(q => `<div class="q"><span>${q.position}. <b>${esc(q.name)}</b> <span class="meta">~${q.est_wait_min} min</span></span><button data-leave="${esc(q.name)}">Leave</button></div>`).join('') || '<span class="meta">Nobody waiting.</span>';
+  // leaderboard
+  const badge = { sharpshooter: '🎯', fair_play: '😇', best_shot: '🔥' };
+  $('lb').innerHTML = (d.leaderboard || []).map((p, i) => `<tr><td>${['🥇', '🥈', '🥉'][i] || i + 1}</td><td>${esc(p.name)} ${(p.badges || []).map(b => badge[b] || '').join('')}</td><td><b>${p.rating}</b></td><td>${p.wins}-${p.losses}</td><td style="color:${p.avg_shot == null ? '' : color(p.avg_shot)}">${p.avg_shot ?? '–'}</td></tr>`).join('') || '<tr><td colspan="5" class="meta">No players yet.</td></tr>';
+}
+
+// -------- events --------
+$('start').onclick = () => act('pool-match', { players: [$('p1').value, $('p2').value].join(','), game_type: $('gt').value, force: confirmReplace() ? '1' : '0' });
+function confirmReplace() { return document.querySelector('.pl') && !/finished/.test($('board').textContent) ? confirm('A match is in progress. Replace it?') : false; }
+document.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { if (b.dataset.a === 'reset_table' && !confirm('Clear this table?')) return; act('pool-action', { action: b.dataset.a }); });
+$('endBtn').onclick = () => act('pool-action', { action: 'end_match', winner: $('who').value });
+$('grpBtn').onclick = () => act('pool-action', { action: 'set_group', player: $('who').value, group: $('grp').value });
+$('qJoin').onclick = () => { const n = $('qName').value.trim(); if (!n) return toast('Enter your name.'); act('pool-queue', { action: 'join', name: n }); $('qName').value = ''; };
+$('queue').onclick = e => { const n = e.target.dataset && e.target.dataset.leave; if (n) act('pool-queue', { action: 'leave', name: n }); };
+
+async function refresh() { if (!base()) return; try { render(await api('pool-state')); } catch (e) { $('live').className = 'dot'; } }
+setInterval(refresh, 2000); refresh();
+</script>
+</body>
+</html>

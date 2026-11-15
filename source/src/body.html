@@ -1,0 +1,114 @@
+<header class="top">
+  <div class="wrap">
+    <div class="mark">
+      <svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg>
+      <b>LOOPOOL</b><span>Queue and camera referee</span>
+    </div>
+    <nav class="views" aria-label="Screens">
+      <a href="#presenter" data-view="presenter">All screens</a>
+      <a href="#phone" data-view="phone">Player phone</a>
+      <a href="#venue" data-view="venue">Counter tablet</a>
+      <a href="#live" data-view="live">Bar TV</a>
+      <a href="#camera" data-view="camera">Camera</a>
+    </nav>
+    <button id="modeBtn" class="src" data-act="settings" title="Where the data comes from">Demo data</button>
+  </div>
+  <div class="controls">
+    <div class="wrap">
+      <span class="label">Demo</span>
+      <span class="clock num" id="clock">--:--</span>
+      <button class="b go" data-act="quick">Quick start</button>
+      <button class="b" data-act="skip1">Skip 1 min</button>
+      <button class="b" data-act="skipturn">Skip to my turn</button>
+      <button class="b" data-act="shot">Send next shot</button>
+      <button class="b" data-act="auto" id="autoBtn">Auto-play shots</button>
+      <button class="b" data-act="reset">Reset</button>
+      <button class="evchip" data-act="showev" id="evChip">No camera events yet</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="view" id="v-presenter" aria-label="All screens">
+    <div class="presenter">
+      <div><p class="label cap">Player phone</p><div class="bezel"><div class="screen"><div class="ph" data-phone></div></div></div></div>
+      <div class="col">
+        <div><p class="label cap">Bar TV · Table 1 livestream</p><div data-tv></div></div>
+        <div><p class="label cap">Counter tablet · staff view</p><div data-venue></div></div>
+      </div>
+    </div>
+  </section>
+  <section class="view solo" id="v-phone" aria-label="Player phone"><div class="bezel"><div class="screen"><div class="ph" data-phone></div></div></div></section>
+  <section class="view" id="v-venue" aria-label="Counter tablet"><div data-venue></div>
+    <section class="staffbox" aria-label="Staff tools">
+      <div class="sb-hd"><span class="sign">Staff tools</span>
+        <label class="label" for="sTable">Table</label><select id="sTable"><option value="T1">Table 1 (camera)</option><option value="T2">Table 2</option><option value="T3">Table 3</option><option value="T4">Table 4</option></select>
+        <span class="sb-now" id="sNow" role="status"></span></div>
+      <div class="sb-grid">
+        <div class="sb-g"><span class="label">Fix the game in play</span>
+          <div class="sb-row"><button class="b" data-act="s-switch_turn" id="sSwitch" title="Give the turn to the other player">Switch turn</button><button class="b" data-act="s-foul" id="sFoul" title="The other player gets ball in hand">Call a foul</button><button class="b" data-act="s-undo" id="sUndo" title="Take back the last shot or staff change on this table">Undo last change</button></div>
+          <div class="sb-row"><span class="sb-w">Winner</span><select id="sWho" aria-label="Winner"></select><button class="b" data-act="s-end" id="sEnd">Declare winner</button></div>
+          <div class="sb-row"><span class="sb-w">Balls</span><select id="sWho2" aria-label="Player"></select><span class="sb-w">plays</span><select id="sGroup" aria-label="Solids or stripes"><option value="solids">solids</option><option value="stripes">stripes</option></select><button class="b" data-act="s-group" id="sGrp">Set</button></div>
+        </div>
+        <div class="sb-g"><span class="label">Start a match by hand</span>
+          <div class="sb-row"><input id="sP1" placeholder="Breaks first" aria-label="Player who breaks" maxlength="24"><span class="sb-w">vs</span><input id="sP2" placeholder="Opponent" aria-label="Opponent" maxlength="24">
+            <select id="sGame" aria-label="Game"><option value="8">8-ball</option><option value="9">9-ball</option><option value="10">10-ball</option></select>
+            <button class="b go" data-act="s-start">Start match</button></div>
+        </div>
+        <div class="sb-g"><span class="label">Between games</span>
+          <div class="sb-row"><button class="b" data-act="s-next_match" id="sNext" title="Call the next names on the board to this table">Call next players</button><button class="b danger" data-act="s-reset_table" id="sClear" title="Stop the game and empty this table">Clear table</button></div>
+        </div>
+      </div>
+    </section>
+  </section>
+  <section class="view" id="v-camera" aria-label="Table camera"><div data-camera></div></section>
+  <section class="view" id="v-live" aria-label="Bar TV"><div data-tv></div></section>
+</main>
+<footer class="wrap">Demo venue with made-up players. Shot events come from a recorded game until a camera is connected.</footer>
+
+<dialog id="settings">
+  <form method="dialog" class="dlg">
+    <h3>Connect to n8n</h3>
+    <p>Import <span class="mono">pool-referee.n8n.json</span>, activate it, then paste your webhook base URL. Every phone that opens <span class="mono">{base}/pool-app</span> shares one queue.</p>
+    <label class="label" for="baseInput">Webhook base URL</label>
+    <input id="baseInput" type="url" placeholder="http://localhost:5678/webhook" autocomplete="off" spellcheck="false">
+    <p id="testRes" role="status"></p>
+    <div class="row2">
+      <button type="button" class="b" data-act="use-demo">Use demo data</button>
+      <button type="button" class="b go" data-act="connect">Test and connect</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="evDlg">
+  <form method="dialog" class="dlg">
+    <h3>Last camera event</h3>
+    <p>What the vision service sends to n8n after each shot: <span class="mono">GET {base}/pool?action=shot&amp;table=T1&amp;event=…</span></p>
+    <pre id="evPre">No shots sent yet.</pre>
+    <div class="row2"><button class="b go" value="ok">Close</button></div>
+  </form>
+</dialog>
+<dialog id="askDlg" aria-labelledby="askTitle">
+  <form class="dlg" id="askForm">
+    <h3 id="askTitle">Ask the referee</h3>
+    <p>An AI referee that knows the house rules and the live board. Try “When’s my turn?” or “Is it a foul if I scratch on the 8?”</p>
+    <div id="askLog" class="asklog" aria-live="polite"></div>
+    <label class="label" for="askInput">Your question</label>
+    <input id="askInput" type="text" maxlength="200" placeholder="Rules, fouls, your place in line" autocomplete="off" enterkeyhint="send">
+    <div class="row2"><button type="button" class="b" data-act="askclose">Close</button><button type="submit" class="b go" id="askSend">Ask</button></div>
+  </form>
+</dialog>
+<dialog id="confirmDlg" aria-labelledby="cfTitle" aria-describedby="cfText">
+  <form method="dialog" class="dlg">
+    <h3 id="cfTitle"></h3>
+    <p id="cfText"></p>
+    <div class="row2"><button class="b" value="no" id="cfNo"></button><button class="b danger fill" value="yes" id="cfYes"></button></div>
+  </form>
+</dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/*__ENGINE__*/
+/*__SCRIPT__*/
+/*__APP__*/
+</script>

@@ -1,0 +1,350 @@
+{
+ "video": "creglia_drill08.mp4",
+ "shots": [
+  {
+   "t_start": 8.85,
+   "t_end": 13.23,
+   "potted": [
+    1
+   ],
+   "scratch": false,
+   "first_contact": 1,
+   "notes": "top-left pocket (ball seen entering ~t=10.2). Run A. Arm and cue over the bottom-left of the table during aim; arm gone before contact.",
+   "potted_at": 10.2
+  },
+  {
+   "t_start": 17.02,
+   "t_end": 22.1,
+   "potted": [
+    2
+   ],
+   "scratch": false,
+   "first_contact": 2,
+   "notes": "top-left pocket (ball seen entering ~t=18.5). Arm and cue over bottom-left during aim; clear at contact.",
+   "potted_at": 18.5
+  },
+  {
+   "t_start": 25.72,
+   "t_end": 30.63,
+   "potted": [
+    3
+   ],
+   "scratch": false,
+   "first_contact": 3,
+   "notes": "top-left pocket (ball seen entering ~t=26.3). Arm over bottom-left during aim; clear at contact.",
+   "potted_at": 26.3
+  },
+  {
+   "t_start": 34.15,
+   "t_end": 38.13,
+   "potted": [
+    4
+   ],
+   "scratch": false,
+   "first_contact": 4,
+   "notes": "bottom-left pocket (ball seen entering ~t=34.6). Arm and cue at top-centre during aim, cue stick in frame over the cloth at contact (top-left, not on the cue ball path).",
+   "potted_at": 34.6
+  },
+  {
+   "t_start": 41.92,
+   "t_end": 45.4,
+   "potted": [
+    5
+   ],
+   "scratch": false,
+   "first_contact": 5,
+   "notes": "bottom-left pocket (ball seen entering ~t=42.5). Cue stick at top-centre; table clear.",
+   "potted_at": 42.5
+  },
+  {
+   "t_start": 48.85,
+   "t_end": 52.13,
+   "potted": [
+    6
+   ],
+   "scratch": false,
+   "first_contact": 6,
+   "notes": "top-middle pocket (ball seen entering ~t=50.3). Arm and cue at bottom-left; clear at contact.",
+   "potted_at": 50.3
+  },
+  {
+   "t_start": 55.78,
+   "t_end": 58.1,
+   "potted": [
+    7
+   ],
+   "scratch": false,
+   "first_contact": 7,
+   "notes": "bottom-middle pocket (ball seen entering ~t=56.5). Cue stick at top-left; arm off table; clear.",
+   "potted_at": 56.5
+  },
+  {
+   "t_start": 61.65,
+   "t_end": 63.0,
+   "potted": [
+    8
+   ],
+   "scratch": false,
+   "first_contact": 8,
+   "notes": "bottom-middle pocket (ball seen entering ~t=62.6). Cue ball only moves ~15 px (stun); 8 potted straight down. Hand and cue at top-centre.",
+   "potted_at": 62.6
+  },
+  {
+   "t_start": 66.75,
+   "t_end": 69.53,
+   "potted": [
+    9
+   ],
+   "scratch": false,
+   "first_contact": 9,
+   "notes": "bottom-right pocket (ball seen entering ~t=68.3). Player at top-left, arm along the rail line; stick passes over the cue ball but not over the row.",
+   "potted_at": 68.3
+  },
+  {
+   "t_start": 72.95,
+   "t_end": 75.77,
+   "potted": [
+    10
+   ],
+   "scratch": false,
+   "first_contact": 10,
+   "notes": "bottom-right pocket (ball seen entering ~t=73.8). Cue stick at top-centre; table clear.",
+   "potted_at": 73.8
+  },
+  {
+   "t_start": 79.15,
+   "t_end": 81.73,
+   "potted": [
+    11
+   ],
+   "scratch": false,
+   "first_contact": 11,
+   "notes": "top-right pocket (ball seen entering ~t=79.7). Arm and cue at bottom-left; clear at contact.",
+   "potted_at": 79.7
+  },
+  {
+   "t_start": 85.48,
+   "t_end": 88.87,
+   "potted": [
+    12
+   ],
+   "scratch": false,
+   "first_contact": 12,
+   "notes": "top-right pocket (ball seen entering ~t=86.2). Arm and cue at bottom-left; clear at contact.",
+   "potted_at": 86.2
+  },
+  {
+   "t_start": 90.65,
+   "t_end": 94.17,
+   "potted": [
+    13
+   ],
+   "scratch": false,
+   "first_contact": 13,
+   "notes": "top-right pocket (ball seen entering ~t=92.2). Cue stick at bottom-centre, almost out of frame.",
+   "potted_at": 92.2
+  },
+  {
+   "t_start": 98.22,
+   "t_end": 106.47,
+   "potted": [
+    14
+   ],
+   "scratch": false,
+   "first_contact": 14,
+   "notes": "bottom-right pocket (ball seen entering ~t=98.5). Cue stick at top-right. Cue ball rolls a long way (to left cushion, back across the table) and only settles near the bottom-right at ~106; ball 15 is not touched. 14 and 15 are adjacent in the row; cue came from above onto 14.",
+   "potted_at": 98.5
+  },
+  {
+   "t_start": 110.25,
+   "t_end": 113.77,
+   "potted": [
+    15
+   ],
+   "scratch": false,
+   "first_contact": 15,
+   "notes": "top-right pocket (ball seen entering ~t=111.2). Cue stick/hand at bottom-right; hand clear at contact. Last ball of run A; video cuts to a fresh rack at 114.8 while the cue ball may still be creeping.",
+   "potted_at": 111.2
+  },
+  {
+   "t_start": 118.28,
+   "t_end": 122.47,
+   "potted": [
+    1
+   ],
+   "scratch": false,
+   "first_contact": 1,
+   "notes": "bottom-left pocket (ball seen entering ~t=119.7). Run B (fresh full row of 15). Arm and cue over top-left during aim.",
+   "potted_at": 119.7
+  },
+  {
+   "t_start": 126.18,
+   "t_end": 131.17,
+   "potted": [
+    2
+   ],
+   "scratch": false,
+   "first_contact": 2,
+   "notes": "bottom-left pocket (ball seen entering ~t=127.6). Arm over top-centre/top-left during aim.",
+   "potted_at": 127.6
+  },
+  {
+   "t_start": 134.55,
+   "t_end": 140.57,
+   "potted": [
+    3
+   ],
+   "scratch": false,
+   "first_contact": 3,
+   "notes": "bottom-left pocket (ball seen entering ~t=135.3). Arm and cue at top-centre during aim; clear at contact.",
+   "potted_at": 135.3
+  },
+  {
+   "t_start": 144.65,
+   "t_end": 150.17,
+   "potted": [
+    4
+   ],
+   "scratch": false,
+   "first_contact": 4,
+   "notes": "top-left pocket (ball seen entering ~t=145.5). Cue stick lies at bottom-right during the aim; no arm on the cloth at contact.",
+   "potted_at": 145.5
+  },
+  {
+   "t_start": 153.95,
+   "t_end": 156.97,
+   "potted": [
+    5
+   ],
+   "scratch": false,
+   "first_contact": 5,
+   "notes": "top-left pocket (ball seen entering ~t=154.5). Arm and cue at bottom-centre/right during aim and contact (cue stick over lower cloth, not on the ball path).",
+   "potted_at": 154.5
+  },
+  {
+   "t_start": 158.75,
+   "t_end": 162.7,
+   "potted": [
+    6
+   ],
+   "scratch": false,
+   "first_contact": 6,
+   "notes": "top-left pocket (ball seen entering ~t=160.0). Cue stick at bottom-centre; clear.",
+   "potted_at": 160.0
+  },
+  {
+   "t_start": 166.68,
+   "t_end": 172.4,
+   "potted": [
+    7
+   ],
+   "scratch": false,
+   "first_contact": 7,
+   "notes": "bottom-middle pocket (ball seen entering ~t=167.3). Cue stick at top-left; clear.",
+   "potted_at": 167.3
+  },
+  {
+   "t_start": 175.58,
+   "t_end": 177.53,
+   "potted": [
+    8
+   ],
+   "scratch": false,
+   "first_contact": 8,
+   "notes": "bottom-middle pocket (ball seen entering ~t=176.45). Cue stick at top-centre; clear. 8 rolls straight down.",
+   "potted_at": 176.45
+  },
+  {
+   "t_start": 181.72,
+   "t_end": 185.2,
+   "potted": [
+    9
+   ],
+   "scratch": false,
+   "first_contact": 9,
+   "notes": "bottom-right pocket (ball seen entering ~t=182.5). Player at left, arm/cue horizontal along the row's left; clear of balls.",
+   "potted_at": 182.5
+  },
+  {
+   "t_start": 188.82,
+   "t_end": 192.1,
+   "potted": [
+    10
+   ],
+   "scratch": false,
+   "first_contact": 10,
+   "notes": "bottom-middle pocket (ball seen entering ~t=189.5). Arm and cue top-right; cue ball comes in from upper right.",
+   "potted_at": 189.5
+  },
+  {
+   "t_start": 195.75,
+   "t_end": 197.53,
+   "potted": [
+    11
+   ],
+   "scratch": false,
+   "first_contact": 11,
+   "notes": "bottom-right pocket (ball seen entering ~t=196.3). Cue stick top-left; clear.",
+   "potted_at": 196.3
+  },
+  {
+   "t_start": 199.28,
+   "t_end": 203.77,
+   "potted": [
+    12
+   ],
+   "scratch": false,
+   "first_contact": 12,
+   "notes": "bottom-right pocket (ball seen entering ~t=200.3). Player (grey cap) at top-left, arm over the cloth at aim and contact (cue over top-left, not over the row).",
+   "potted_at": 200.3
+  },
+  {
+   "t_start": 207.65,
+   "t_end": 211.2,
+   "potted": [
+    13
+   ],
+   "scratch": false,
+   "first_contact": 13,
+   "notes": "bottom-right pocket (ball seen entering ~t=209.2). Cue ball sits near the top rail; arm gone before contact; cue stick tip at top edge.",
+   "potted_at": 209.2
+  },
+  {
+   "t_start": 214.45,
+   "t_end": 216.53,
+   "potted": [
+    14
+   ],
+   "scratch": false,
+   "first_contact": 14,
+   "notes": "top-right pocket (ball seen entering ~t=215.0). Cue stick at bottom, hand at bottom-centre.",
+   "potted_at": 215.0
+  },
+  {
+   "t_start": 220.15,
+   "t_end": 222.1,
+   "potted": [
+    15
+   ],
+   "scratch": false,
+   "first_contact": 15,
+   "notes": "top-right pocket (ball seen entering ~t=220.8). Arm and cue at bottom-right during aim and during contact (stick over the lower-right cloth, ball path clear). Video ends at 222.1 with the cue ball still creeping, so t_end is the video end.",
+   "potted_at": 220.8
+  }
+ ],
+ "hand_moves": [
+  {
+   "t": "0-5.6",
+   "what": "Title card 'Rules' overlays the first 5.6 s; the 15 balls are already lined up and the cue ball is placed (ball in hand, per the card). Nothing visible about how they were placed."
+  },
+  {
+   "t": 114.8,
+   "what": "Hard video cut between run A (after ball 15 potted) and run B: the table is back to a full row of 15 balls in numerical order with the cue ball placed top-left. The re-rack is not shown. This is a re-set mid-video and would break a tracker's ball-count continuity."
+  },
+  {
+   "t": "between shots",
+   "what": "No ball was moved by hand between shots within a run: the cue ball rests where it stopped and the next shot is taken from there (checked: rest position of the cue ball before each shot equals its stop position within ~1 px at 640 wide)."
+  }
+ ],
+ "labeller_notes": "Two runs of the same drill (shoot balls 1..15 in order, cue ball never in hand after the first shot): run A t=8.85..114, 15 shots, all potted; run B t=118..222, 15 shots, all potted. 30 shots, 30 balls potted, no scratch, no foul. Ball identification is by position in the starting row (left to right = 1..15, numerically ordered, 8 black in 8th place) and by colour: in this set 4 is pink, 5 purple, 6 green, 7 orange, 8 black, stripes 9..15 same colours with a band (the brief's colour list says 4 purple/5 orange/7 maroon, which does not match this set; the row order is what I used). Stripes 12, 13, 14 show a lot of dark ring from above and look near-black/pink-dark. First contact: in every shot only the target ball (the lowest ball left in the row) moved after the cue ball reached it and nothing else moved; I saw the cue ball adjacent to the target at 4 fps (0.25 s) spacing, not frame by frame, so contact is 'seen', pocket names are approximate and the exact contact frame is not stated. t_start = first frame the cue ball moves (measured with a cream-colour blob tracker on the cue ball, confirmed by eye on 4-10 fps contact sheets; accuracy about +/-0.1 s). t_end = first time the cue ball has moved less than ~1 px (of 1280) over 0.5 s after the pot; the cue ball creeps slowly for a few seconds on some shots, so t_end could be 0.5-1 s earlier than the last visible creep. potted_at is an extra field: the time the ball is first seen in/at the pocket, approx +/-0.25 s. The video was an edited clip: the first 5.6 s is a title card (balls and cue ball visible through it, cue ball not detectable)."
+}

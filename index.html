@@ -1,0 +1,2436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>Loopool</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Pool hall queue and camera referee demo: join by QR, get called to a table, live foul review, ratings, and a livestream for the bar TVs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;800&family=Gochi+Hand&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* "Chalkboard": one deliberate dark look for a dim bar. Slate board ground, chalk-white text, chalk-blue actions,
+   amber raffle-ticket stubs, chalk lettering for names, felt and wood only where a real table is drawn.
+   Presenter layout: phone in a bezel on the left; bar TV and counter tablet stacked on the right. */
+:root {
+  color-scheme: dark;
+  --board: #1c2723; --board-2: #233029; --board-3: #2a3832; --chalkboard: #26352f; --tv: #121a17; --tray: #111916;
+  --line: #33413b; --line-2: #3a4842; --line-3: #5b6a63;
+  --chalk: #ecefe9; --dim: #a4afa8; --faint: #8e9b94;
+  --blue: #5b9be8; --blue-ink: #0e1714; --blue-text: #8fbcf2;
+  --brass: #e5ad3e; --ticket: #ebbb4e; --ticket-ink: #2b1e06;
+  --felt: #1f6b47; --felt-edge: #175a3c; --rail: #5a3b24; --pocket: #0b0f0d; --felt-ink: #dff0e6;
+  --foul: #ff7a6b; --foul-ink: #2a0d09; --good: #67d394;
+  --f-sign: "Big Shoulders", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-chalk: "Gochi Hand", "Comic Sans MS", "Chalkboard SE", cursive;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--board); color: var(--chalk); font: 15px/1.45 var(--f-body); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--tv); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+a { color: var(--blue-text); }
+.mono { font-family: var(--f-mono); }
+.num { font-variant-numeric: tabular-nums; }
+.dim { color: var(--dim); }
+.sign { font-family: var(--f-sign); font-weight: 800; letter-spacing: .04em; text-transform: uppercase; line-height: .95; }
+.chalk { font-family: var(--f-chalk); font-weight: 400; }
+.label { font: 500 11px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* page chrome */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 8; background: var(--tv); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 10px 28px; flex-wrap: wrap; padding-block: 10px 0; }
+.mark { display: flex; align-items: center; gap: 10px; margin-right: auto; min-height: 44px; }
+.mark b { font: 800 22px/1 var(--f-sign); letter-spacing: .06em; }
+.mark span { font-size: 13px; color: var(--dim); }
+.views { display: flex; gap: 22px; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+.views::-webkit-scrollbar { display: none; }
+.views a { color: var(--dim); text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 0 11px; border-bottom: 3px solid transparent; white-space: nowrap; }
+.views a.on { color: var(--chalk); border-bottom-color: var(--brass); }
+.src { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; border: 1px solid var(--line-2); background: transparent; border-radius: 6px; padding: 0 10px; font: 500 12px var(--f-mono); color: var(--dim); white-space: nowrap; }
+.src::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.src.live::before { background: var(--good); }
+.src.err::before { background: var(--foul); }
+.controls { background: var(--board-2); border-bottom: 1px solid var(--line); }
+.controls .wrap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-block: 8px; }
+.controls .clock { font: 800 20px/1 var(--f-sign); letter-spacing: .04em; margin-right: 6px; }
+.b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line-2); background: transparent; color: var(--chalk); font-weight: 600; font-size: 13.5px; }
+.b:hover { border-color: var(--line-3); }
+.b:disabled { opacity: .4; cursor: not-allowed; }
+.b.go { background: var(--blue); border-color: var(--blue); color: var(--blue-ink); }
+.b.on { border-color: var(--brass); color: var(--brass); }
+.evchip { font: 400 12px var(--f-mono); color: var(--dim); background: none; border: 0; text-decoration: underline dotted; text-underline-offset: 3px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 36px; padding: 0 4px; }
+
+main { padding-block: 22px 44px; }
+.view { display: none; }
+.view.on { display: block; }
+.presenter { display: grid; grid-template-columns: 410px minmax(0, 1fr); gap: 28px; align-items: start; }
+.col { display: grid; gap: 26px; min-width: 0; }
+.cap { margin: 0 0 10px 2px; }
+footer { color: var(--faint); font-size: 12.5px; padding-block: 0 28px; }
+body.kiosk header.top, body.kiosk footer { display: none; }
+.staffbox { margin-top: 18px; background: var(--board-2); border: 1px solid var(--line); border-radius: 18px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.staffbox .sb-hd { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.staffbox .sb-hd .sign { font-size: 24px; margin-right: 8px; }
+.staffbox .sb-hd .label { margin: 0; }
+.staffbox .sb-now { font-size: 14px; color: var(--dim); }
+.staffbox .sb-grid { display: flex; flex-wrap: wrap; gap: 16px 30px; align-items: flex-start; }
+.staffbox .sb-g { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.staffbox .sb-g .label { margin: 0; }
+.staffbox .sb-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.staffbox .sb-w { font: 500 12px var(--f-mono); color: var(--dim); }
+.staffbox .sb-row > .sb-w:first-child { min-width: 52px; }
+.staffbox input, .staffbox select { min-height: 36px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--board); color: var(--chalk); font: inherit; font-size: 14px; }
+.staffbox input { width: 132px; font: 19px/1 var(--f-chalk); }
+.staffbox input::placeholder { font: 14px var(--f-body); color: var(--faint); }
+.staffbox select:disabled { opacity: .4; }
+.b.danger { border-color: #5a2a2a; color: var(--foul); }
+.b.danger.fill { background: var(--foul); border-color: var(--foul); color: var(--foul-ink); }
+.shotphoto { position: relative; border-radius: 10px; overflow: hidden; background: #0b0f0d; }
+.shotphoto img { display: block; width: 100%; height: auto; }
+.shotphoto .cap { position: absolute; left: 10px; bottom: 10px; font: 500 12px var(--f-mono); color: #fff; background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 4px; }
+.scorechip { display: inline-flex; align-items: center; gap: 8px; }
+.scorechip b { display: inline-grid; place-items: center; min-width: 40px; height: 40px; border-radius: 50%; border: 3px solid currentColor; font: 800 17px/1 var(--f-sign); }
+.scorechip span { font-size: 13px; color: var(--dim); }
+.tipline { margin: 0; padding: 8px 12px; border-left: 3px solid var(--good); background: var(--board-2); font-size: 14px; border-radius: 0 6px 6px 0; }
+.badge { display: inline-block; padding: 1px 6px; border-radius: 4px; background: var(--board-3); color: var(--brass); font: 600 10.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; vertical-align: 1px; }
+.asklog { display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow-y: auto; margin: 4px 0 12px; }
+.asklog:empty { display: none; }
+.asklog p { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 15px; line-height: 1.4; max-width: 88%; }
+.asklog .q { align-self: flex-end; background: var(--blue); color: var(--blue-ink); }
+.asklog .a { align-self: flex-start; background: var(--board-3); color: var(--chalk); }
+.asklog .a.wait { color: var(--dim); }
+.askbtn { margin-top: 4px; }
+body.kiosk main.wrap { max-width: none; padding: 1.5vw; }
+
+/* phone */
+.bezel { width: 100%; max-width: 410px; margin: 0 auto; padding: 10px; border-radius: 48px; background: #0a0f0d; box-shadow: 0 0 0 1px var(--line), 0 24px 60px rgba(0,0,0,.45); }
+.screen { height: 844px; overflow-y: auto; overflow-x: hidden; border-radius: 38px; background: var(--board); scrollbar-width: none; }
+.screen::-webkit-scrollbar { display: none; }
+.solo .bezel { padding: 0; border-radius: 0; background: none; box-shadow: none; max-width: 460px; }
+.solo .screen { height: auto; min-height: 70vh; border-radius: 0; overflow: visible; }
+.ph { padding: 16px 20px 26px; display: flex; flex-direction: column; gap: 18px; min-height: 100%; }
+.ph-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.ph-top .sign { font-size: 24px; }
+.live-tag { display: inline-flex; align-items: center; gap: 8px; font: 500 12.5px var(--f-mono); color: var(--dim); text-transform: uppercase; }
+.live-tag::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--foul); }
+.h1 { font: 800 42px/.95 var(--f-sign); letter-spacing: .01em; text-transform: uppercase; }
+.lede { font-size: 15px; color: var(--dim); }
+.cta { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 54px; border-radius: 8px; border: 0; background: var(--blue); color: var(--blue-ink); text-decoration: none; font: 800 21px/1 var(--f-sign); letter-spacing: .06em; text-transform: uppercase; }
+.cta.foul { background: var(--foul); color: var(--foul-ink); }
+.cta.line { background: transparent; color: var(--chalk); border: 1px solid var(--line-3); }
+.quiet { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--chalk); font-weight: 600; font-size: 15px; }
+.quiet:disabled { opacity: .4; cursor: not-allowed; }
+.push { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+.floor { position: relative; height: 150px; border-radius: 10px; background: #172019; border: 1px solid var(--line); }
+.floor.sm { height: 112px; }
+.floor .counter { position: absolute; left: 12px; right: 12px; top: 8px; height: 14px; border-radius: 3px; background: var(--board-3); font: 500 10px/14px var(--f-mono); color: var(--faint); text-align: center; letter-spacing: .08em; }
+.ft { position: absolute; width: calc(50% - 20px); height: 46px; border-radius: 6px; border: 3px solid var(--rail); background: var(--felt); display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 8px; }
+.floor.sm .ft { height: 34px; }
+.ft b { font: 800 20px/1 var(--f-sign); }
+.ft small { font: 500 10px var(--f-mono); color: var(--felt-ink); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ft.ref { box-shadow: 0 0 0 2px var(--blue); }
+.ft.open { background: transparent; border-style: dashed; border-color: var(--brass); }
+.ft.dimmed { opacity: .45; }
+.ft.you { box-shadow: 0 0 0 3px var(--ticket); }
+.ft.a { left: 14px; top: 36px; } .ft.b2 { left: 14px; top: 94px; } .ft.c { right: 14px; top: 36px; } .ft.d { right: 14px; top: 94px; }
+.floor.sm .ft.a, .floor.sm .ft.c { top: 30px; } .floor.sm .ft.b2, .floor.sm .ft.d { top: 70px; }
+
+.rows { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 52px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row .n { font: 800 26px/1 var(--f-sign); }
+.row .n.ref { color: var(--blue-text); }
+.row b { display: block; font-size: 16px; font-weight: 600; }
+.row small { display: block; font-size: 13px; color: var(--dim); }
+.row .t { font: 500 13px var(--f-mono); color: var(--dim); text-align: right; }
+.rules { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--dim); }
+.rules li { display: flex; gap: 10px; align-items: center; }
+
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field label, .field legend { font-size: 14px; font-weight: 600; padding: 0; }
+.field input[type=text], .field input[type=tel], .field input[type=email] { height: 50px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--board-2); color: var(--chalk); }
+.field input[type=text] { font: 24px var(--f-chalk); }
+.field input[type=tel] { font: 500 17px var(--f-mono); }
+.field input[type=email] { font: 17px var(--f-body); }
+.field input::placeholder { color: var(--faint); }
+.field small { font-size: 13px; color: var(--dim); }
+fieldset { margin: 0; padding: 0; border: 0; }
+.seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.seg button { height: 50px; border-radius: 8px; border: 2px solid var(--line-2); background: transparent; font: 800 20px/1 var(--f-sign); letter-spacing: .04em; }
+.seg button[aria-pressed="true"] { background: var(--chalk); border-color: var(--chalk); color: var(--board); }
+.switch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px; border-radius: 8px; border: 1px solid var(--line-2); cursor: pointer; }
+.switch b { display: block; font-size: 15px; font-weight: 600; }
+.switch small { display: block; font-size: 13px; color: var(--dim); margin-top: 4px; }
+.switch .knob { position: relative; width: 52px; height: 32px; }
+.switch input { position: absolute; inset: 0; width: 52px; height: 32px; margin: 0; opacity: 0; cursor: pointer; }
+.switch .knob i { position: absolute; inset: 0; border-radius: 16px; background: var(--board-3); border: 1px solid var(--line-3); transition: background .15s; }
+.switch .knob i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 12px; background: var(--dim); transition: left .15s, background .15s; }
+.switch input:checked + i { background: var(--blue); border-color: var(--blue); }
+.switch input:checked + i::after { left: 23px; background: var(--blue-ink); }
+.switch input:disabled + i { opacity: .4; }
+.switch input:focus-visible + i { outline: 2px solid var(--blue-text); outline-offset: 2px; }
+
+.ticket { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 112px; border-radius: 10px; background: var(--ticket); color: var(--ticket-ink); }
+.ticket .main { display: flex; flex-direction: column; gap: 6px; padding: 18px 18px 16px; }
+.ticket .main .label { color: var(--ticket-ink); }
+.ticket .no { font: 800 76px/.85 var(--f-sign); letter-spacing: .01em; }
+.ticket .who { font-size: 14px; font-weight: 500; }
+.ticket .stub { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; border-left: 2px dashed rgba(43,30,6,.45); padding: 0 10px; text-align: center; }
+.ticket .stub b { font: 800 40px/1 var(--f-sign); }
+.ticket .stub span { font: 500 11px var(--f-mono); letter-spacing: .08em; }
+.ticket::before, .ticket::after { content: ""; position: absolute; right: 101px; width: 22px; height: 22px; border-radius: 11px; background: var(--board); }
+.ticket::before { top: -11px; } .ticket::after { bottom: -11px; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.stat { display: flex; flex-direction: column; gap: 2px; padding-left: 12px; border-left: 1px solid var(--line-2); min-width: 0; }
+.stat b { font: 800 32px/1 var(--f-sign); letter-spacing: .01em; }
+.stat span { font-size: 13px; color: var(--dim); }
+
+.board { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px 18px; border: 5px solid var(--rail); border-radius: 6px; background: var(--chalkboard); }
+.board ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font: 26px/1.15 var(--f-chalk); }
+.board li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.board li small { font: 500 12px var(--f-mono); color: var(--dim); white-space: nowrap; }
+.board li.done { color: var(--faint); }
+.board li.done > span { text-decoration: line-through; text-decoration-thickness: 2px; }
+.board li.me > span { text-decoration: underline; text-decoration-color: var(--brass); text-decoration-thickness: 3px; text-underline-offset: 5px; }
+.board li.me small { color: var(--brass); }
+.board .empty { font: 22px var(--f-chalk); color: var(--dim); }
+.sms { display: flex; flex-direction: column; gap: 6px; }
+.sms p { padding: 10px 12px; border-radius: 14px 14px 14px 4px; background: var(--board-3); font-size: 14.5px; line-height: 1.4; }
+.sms small { font-size: 12px; color: var(--faint); }
+
+.ready { display: flex; flex-direction: column; gap: 6px; padding: 22px 20px 20px; border: 6px solid var(--rail); border-radius: 12px; background: var(--felt); }
+.ready .label { color: var(--felt-ink); }
+.ready .big { font: 800 82px/.85 var(--f-sign); }
+.ready .count { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; }
+.ready .count b { font: 800 48px/1 var(--f-sign); font-variant-numeric: tabular-nums; }
+.ready .count span { font-size: 15px; color: var(--felt-ink); }
+.versus { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.versus .p { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.versus .p.r { align-items: flex-end; text-align: right; }
+.versus .p .chalk { font-size: 30px; line-height: 1; }
+.versus .p small { font: 500 13px/1.35 var(--f-mono); color: var(--dim); }
+.versus .x { font: 800 18px var(--f-sign); color: var(--faint); }
+.tally { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--brass); }
+
+.player { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: var(--board-2); }
+.player.turn { box-shadow: inset 0 0 0 2px var(--blue); }
+.player .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.player .chalk { font-size: 28px; line-height: 1; }
+.player .chalk small { font: 13px var(--f-body); color: var(--dim); margin-left: 4px; }
+.player .flag { font: 500 12px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.player .flag.shoot { color: var(--blue-text); }
+.player .flag.hold { color: var(--brass); }
+.tray { display: flex; gap: 4px; align-items: center; min-height: 30px; padding: 0 5px; border-radius: 15px; background: var(--tray); box-shadow: inset 0 2px 5px rgba(0,0,0,.7); }
+.tray .open { font-size: 12.5px; color: var(--faint); padding-left: 6px; }
+.ball { flex: none; width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; box-shadow: inset 0 -2px 3px rgba(0,0,0,.3); }
+.ball i { width: 11px; height: 11px; border-radius: 50%; background: #f4f4ee; color: #111; display: grid; place-items: center; font: 700 7.5px/1 var(--f-body); font-style: normal; }
+.tbl { line-height: 0; border-radius: 10px; overflow: hidden; }
+.tbl svg { width: 100%; height: auto; display: block; }
+.replay { position: relative; }
+.cliptag { margin-top: 8px; font: 500 11.5px/1.4 var(--f-mono); color: var(--faint); }
+.lastshot { font-size: 15px; }
+.lastshot > .dim:first-child { margin-right: 4px; }
+.log { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; font-size: 14px; }
+.log li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.log li:last-child { border-bottom: 0; }
+.log .n { font: 500 13px var(--f-mono); color: var(--faint); }
+.bad { color: var(--foul); }
+.meter { position: relative; height: 10px; border-radius: 5px; background: var(--board-3); }
+.meter i { display: block; height: 10px; border-radius: 5px; background: var(--foul); }
+.meter b { position: absolute; left: 80%; top: -4px; width: 2px; height: 18px; background: var(--chalk); }
+.vote { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line-2); min-width: 0; }
+.vote.wait { border-style: dashed; border-color: var(--line-3); }
+.vote .chalk { font-size: 22px; line-height: 1; }
+.vote span:last-child { font-size: 13px; color: var(--dim); }
+.vote .yes { color: var(--good) !important; } .vote .no { color: var(--foul) !important; }
+.won .big { font: 800 96px/.85 var(--f-sign); text-transform: uppercase; }
+.won .delta { display: flex; align-items: baseline; gap: 12px; margin-top: 10px; }
+.won .delta b { font: 800 44px/1 var(--f-sign); color: var(--brass); }
+.won .delta b.down { color: var(--foul); }
+.won .delta span { font: 500 15px var(--f-mono); color: var(--dim); }
+.hold { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 10px; background: var(--board-2); }
+.hold .hd { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.hold .hd b { font-size: 16px; font-weight: 600; }
+.lb { display: flex; flex-direction: column; }
+.lb div { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 34px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.lb div:last-child { border-bottom: 0; }
+.lb span:first-child { font: 500 13px var(--f-mono); color: var(--faint); }
+.lb span:last-child { font: 500 14px var(--f-mono); }
+.lb div.me { color: var(--ticket); font-weight: 600; }
+.lb div.me span:nth-child(2) { font: 22px/1 var(--f-chalk); }
+
+/* bar TV */
+.tv { background: var(--tv); border-radius: 14px; padding: 22px 24px; border: 1px solid var(--line); }
+.tv-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.tv-top .t { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.onair { padding: 4px 10px; border-radius: 4px; background: var(--foul); color: var(--foul-ink); font: 800 18px/1.1 var(--f-sign); letter-spacing: .08em; }
+.tv-top .sign { font-size: 28px; }
+.tv-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; }
+.tv-main { display: flex; flex-direction: column; min-width: 0; }
+.score { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; padding: 12px 16px; border-radius: 10px; background: var(--board); margin-bottom: 14px; }
+.score .p { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.score .p.r { align-items: flex-end; text-align: right; }
+.score .chalk { font-size: 32px; line-height: 1; }
+.score .chalk small { font: 14px var(--f-body); color: var(--dim); }
+.score .p.turn .chalk { text-decoration: underline; text-decoration-color: var(--blue); text-decoration-thickness: 3px; text-underline-offset: 6px; }
+.score .tray { width: max-content; max-width: 100%; }
+.score .mid { display: flex; flex-direction: column; align-items: center; font: 800 14px/1 var(--f-sign); letter-spacing: .1em; color: var(--dim); }
+.score .mid b { font-size: 40px; color: var(--chalk); letter-spacing: 0; }
+.tvtable { position: relative; line-height: 0; border-radius: 10px; overflow: hidden; }
+.tvtable svg { width: 100%; height: auto; display: block; }
+.banner { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); padding: 8px 16px; border-radius: 6px; background: var(--foul); color: var(--foul-ink); font: 800 19px/1.1 var(--f-sign); letter-spacing: .08em; white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+.banner.win { background: var(--ticket); color: var(--ticket-ink); }
+.idle { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; line-height: 1.35; background: rgba(12,18,16,.55); }
+.idle b { display: block; font: 800 30px/1 var(--f-sign); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px; }
+/* the latest line, then older lines only where the column has room for them (whole lines, never cut) */
+.ticker { display: flex; flex-direction: column; flex: 1 0 auto; margin-top: 14px; padding: 10px 16px; border-radius: 8px; background: var(--board); font-size: 16px; line-height: 1.35; }
+.ticker p { margin: 0; }
+.ticker .now { display: flex; align-items: baseline; gap: 14px; min-height: 24px; }
+.ticker b { font: 800 17px/1 var(--f-sign); letter-spacing: .08em; color: var(--brass); white-space: nowrap; }
+.ticker b.ai { color: var(--blue-text); }
+.ticker .older { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; }
+.ticker .older > div { position: absolute; inset: 6px 0 0; display: flex; flex-flow: column wrap; align-content: flex-start; gap: 4px 60px; }
+.ticker .older p { width: 100%; font-size: .9em; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ailine { display: flex; gap: 10px; align-items: baseline; margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--board-2); border: 1px solid var(--line); font-size: 15px; line-height: 1.4; }
+.ailine b { font: 800 14px/1 var(--f-sign); letter-spacing: .08em; color: var(--blue-text); }
+/* right column: queue, last shot (or tonight's results), ratings, QR code. The ratings give up rows when the queue is
+   long; the QR code grows when there is room (a bigger code scans from further away). */
+.aside { display: flex; flex-direction: column; gap: 16px; min-width: 0; min-height: 0; }
+.aside > * { flex: none; }
+.tv .board li > span:first-child { display: flex; flex: 1; align-items: baseline; gap: 10px; min-width: 0; }
+.tv .board li > span:first-child::after { content: ""; flex: 1; min-width: 10px; border-bottom: 2px dotted var(--line-3); transform: translateY(-.18em); }
+.shotcard, .tvres { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.shotcard .sc { display: flex; align-items: center; gap: 12px; }
+.shotcard .sc p { margin: 0; min-width: 0; font-size: 15.5px; line-height: 1.35; }
+.shotcard .sc strong { margin-right: 3px; font: 800 1.05em/1 var(--f-sign); letter-spacing: .06em; text-transform: uppercase; }
+.ring { flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 3px solid currentColor; font: 800 19px/1 var(--f-sign); }
+.tvres .rs { display: flex; flex-direction: column; font-size: 15.5px; line-height: 1.3; }
+.tvres .rs > div { padding: 4px 0; }
+.tvres .rs small { margin-left: 9px; font: 500 12px var(--f-mono); color: var(--dim); white-space: nowrap; }
+.aside .ratings { flex: 0 1 auto; min-height: 0; }
+.ratings { display: flex; flex-direction: column; gap: 6px; --rt-row: 30px; font-size: 15.5px; }
+.ratings .rt { display: flex; flex-flow: column wrap; align-content: flex-start; flex: 0 1 auto; height: calc(var(--rt-row) * 3); min-height: 0; overflow: hidden; }
+.ratings .rt > div { display: flex; align-items: baseline; gap: 7px; width: 50%; height: var(--rt-row); line-height: var(--rt-row); padding-right: 10px; min-width: 0; }
+.ratings .rk { font: 500 .8em var(--f-mono); color: var(--faint); }
+.ratings .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ratings .pts { font: 500 .88em var(--f-mono); color: var(--dim); }
+.honours { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--dim); }
+.aside .qrline { flex: 1 0 96px; min-height: 0; max-height: 132px; }
+.aside .qrbox { width: auto; height: 100%; aspect-ratio: 1; }
+.aside .qrbox img { width: 100%; height: 100%; }
+.qrline { display: flex; gap: 14px; align-items: center; }
+.qrbox { width: 96px; height: 96px; flex: none; border-radius: 8px; background: #fff; padding: 6px; display: grid; place-items: center; line-height: 0; }
+.qrbox img { width: 84px; height: 84px; image-rendering: pixelated; }
+.qrline .sign { font-size: 22px; line-height: 1.05; }
+
+/* counter tablet */
+.tablet { background: var(--board-2); border: 1px solid var(--line); border-radius: 22px; padding: 20px 22px; }
+.tab-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.tab-top .sign { font-size: 30px; }
+.tab-top .clock { font: 800 28px/1 var(--f-sign); }
+.tgrid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; }
+.tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tcard { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px 14px; border-radius: 10px; background: var(--board); border: 1px solid var(--line); }
+.tcard.staff { border-color: var(--foul); box-shadow: inset 0 0 0 1px var(--foul); }
+.tcard .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.tcard .hd .sign { font-size: 24px; }
+.tcard .st { font: 500 11.5px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.st.play { color: var(--good); } .st.wait { color: var(--brass); } .st.alert { color: var(--foul); } .st.free { color: var(--faint); }
+.tcard .meta { font: 500 12px var(--f-mono); color: var(--dim); }
+.tcard .felt { height: 6px; border-radius: 3px; background: var(--felt); box-shadow: 0 0 0 2px var(--rail); margin: 2px 0 4px; }
+.seat { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.seat .chalk { font-size: 22px; line-height: 1.1; }
+.seat small { font: 500 12px var(--f-mono); color: var(--dim); white-space: nowrap; }
+.decide { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.decide button { min-height: 44px; border-radius: 6px; font: 800 16px/1 var(--f-sign); letter-spacing: .06em; border: 1px solid var(--line-3); background: transparent; }
+.decide button.uphold { background: var(--foul); color: var(--foul-ink); border-color: var(--foul); }
+.results { display: flex; flex-direction: column; }
+.results div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.results div:last-child { border-bottom: 0; }
+.results small { font: 500 12px var(--f-mono); color: var(--dim); }
+.activity { display: flex; flex-direction: column; }
+.activity div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.activity div:last-child { border-bottom: 0; }
+.activity .tm { font: 500 12px var(--f-mono); color: var(--faint); }
+.activity .todo span:last-child { color: var(--foul); font-weight: 600; }
+.activity .todo svg { vertical-align: -3px; margin-right: 6px; }
+.panel { display: flex; flex-direction: column; gap: 10px; }
+
+/* dialogs + toast */
+dialog { border: 1px solid var(--line-2); border-radius: 14px; padding: 0; background: var(--board-2); color: var(--chalk); width: min(520px, calc(100vw - 32px)); box-shadow: 0 30px 80px rgba(0,0,0,.55); }
+dialog::backdrop { background: rgba(5,9,8,.7); }
+.dlg { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.dlg h3 { font: 800 28px/1 var(--f-sign); letter-spacing: .03em; text-transform: uppercase; }
+.dlg p { font-size: 14px; color: var(--dim); }
+.dlg input { height: 46px; border: 1px solid var(--line-2); background: var(--board); border-radius: 8px; padding: 0 12px; font: 500 14px var(--f-mono); color: var(--chalk); }
+.dlg #askInput { font: 16px var(--f-body); }
+.dlg .row2 { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+#confirmDlg { width: min(440px, calc(100vw - 32px)); }
+#confirmDlg p { font-size: 15px; line-height: 1.45; color: var(--chalk); }
+#confirmDlg .b { min-height: 46px; padding: 0 16px; font-size: 15px; }
+.dlg pre { margin: 0; background: var(--board); border-radius: 8px; padding: 12px; font: 12px/1.5 var(--f-mono); max-height: 340px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: var(--dim); }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(16px); background: var(--chalk); color: var(--board); padding: 11px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; opacity: 0; transition: .25s; pointer-events: none; z-index: 30; max-width: calc(100vw - 32px); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 1120px) { .presenter { grid-template-columns: minmax(0, 1fr); } .tv-grid { grid-template-columns: minmax(0, 1fr); } .aside { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } .aside .qrline { max-height: none; } .aside .qrbox { height: 96px; align-self: center; } }
+@media (max-width: 760px) { .tgrid { grid-template-columns: minmax(0, 1fr); } .tables { grid-template-columns: minmax(0, 1fr); } .mark span { display: none; } .evchip { display: none; } .score .chalk { font-size: 24px; } .tv { padding: 16px; } .tablet { padding: 16px; } }
+/* Bar TV as signage (switched on by fitTV): one 16:9 canvas, 1280 x 720, scaled to the screen with zoom. Sizes here are
+   canvas pixels; a 1080p TV shows them 1.5 times larger. The picture column is as wide as the table can be at this
+   height and the right column takes the rest, so the screen never scrolls and no part of it is left empty. */
+.tvfit .tv { width: 1280px; height: 720px; zoom: var(--tvz, 1); padding: 24px 32px; display: flex; flex-direction: column; overflow: hidden; }
+body.tvfull { background: var(--tv); overflow: hidden; }
+body.tvfull main.wrap { padding: 0; }
+body.tvfull [data-tv] { height: 100vh; display: grid; place-items: center; }
+body.tvfull .tv { border: 0; border-radius: 0; }
+.tvfit .tv-top { flex: none; margin-bottom: 14px; }
+.tvfit .tv-top .sign { font-size: 34px; }
+.tvfit .onair { font-size: 21px; padding: 5px 12px; }
+.tvfit .tv-top .mark b { font-size: 26px; }
+.tvfit .tv-grid { flex: 1; min-height: 0; grid-template-columns: 770px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 26px; }
+.tvfit .tv-main { min-height: 0; }
+.tvfit .score { flex: none; padding: 12px 18px; margin-bottom: 12px; }
+.tvfit .score .chalk { font-size: 40px; }
+.tvfit .score .chalk small { font-size: 17px; }
+.tvfit .score .tray { min-height: 38px; border-radius: 19px; gap: 5px; padding: 0 6px; }
+.tvfit .score .tray .open { font-size: 15px; }
+.tvfit .score .ball { width: 28px; height: 28px; }
+.tvfit .score .ball i { width: 14px; height: 14px; font-size: 9.5px; }
+.tvfit .score .mid { font-size: 16px; }
+.tvfit .score .mid b { font-size: 46px; }
+.tvfit .tvtable { flex: 0 1 auto; min-height: 0; margin-block: auto; aspect-ratio: 1096 / 596; }
+.tvfit .tvtable [data-tbl], .tvfit .tvtable .shotphoto, .tvfit .tvtable svg { height: 100%; }
+.tvfit .tvtable .shotphoto { display: flex; justify-content: center; background: none; }
+.tvfit .tvtable .shotphoto img { width: auto; max-width: 100%; height: 100%; border-radius: 10px; object-fit: contain; }
+.tvfit .shotphoto .cap { left: 14px; bottom: 14px; font-size: 15px; }
+.tvfit .banner { padding: 10px 20px; font-size: 26px; }
+.tvfit .idle { font-size: 21px; }
+.tvfit .idle b { font-size: 42px; margin-bottom: 10px; }
+.tvfit .ticker { flex: 0 0 80px; justify-content: center; margin-top: 12px; padding: 10px 18px; font-size: 20px; overflow: hidden; }
+.tvfit .ticker b { font-size: 20px; }
+.tvfit .ticker .now span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.tvfit .aside { display: flex; gap: 14px; justify-content: space-between; }
+.tvfit .label { font-size: 13.5px; }
+.tvfit .board { padding: 12px 18px 14px; gap: 6px; }
+.tvfit .board ol { font-size: 29px; gap: 3px; }
+.tvfit .board li small { font-size: 15px; }
+.tvfit .board .empty { font-size: 26px; }
+.tvfit .shotcard .sc p, .tvfit .tvres .rs { font-size: 19px; }
+.tvfit .ring { width: 58px; height: 58px; border-width: 4px; font-size: 25px; }
+.tvfit .shotcard .tipline { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 17px; }
+.tvfit .tvres .rs small { font-size: 14px; }
+.tvfit .ratings { --rt-row: 34px; font-size: 19px; }
+.tvfit .honours { font-size: 15px; }
+.tvfit .badge { font-size: 12px; }
+.tvfit .aside .qrline { max-height: 230px; gap: 18px; }
+.tvfit .aside .qrbox { height: 100%; align-self: auto; }
+.tvfit .qrline .sign { font-size: 30px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="mark">
+      <svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg>
+      <b>LOOPOOL</b><span>Queue and camera referee</span>
+    </div>
+    <nav class="views" aria-label="Screens">
+      <a href="#presenter" data-view="presenter">All screens</a>
+      <a href="#phone" data-view="phone">Player phone</a>
+      <a href="#venue" data-view="venue">Counter tablet</a>
+      <a href="#live" data-view="live">Bar TV</a>
+      <a href="#camera" data-view="camera">Camera</a>
+    </nav>
+    <button id="modeBtn" class="src" data-act="settings" title="Where the data comes from">Demo data</button>
+  </div>
+  <div class="controls">
+    <div class="wrap">
+      <span class="label">Demo</span>
+      <span class="clock num" id="clock">--:--</span>
+      <button class="b go" data-act="quick">Quick start</button>
+      <button class="b" data-act="skip1">Skip 1 min</button>
+      <button class="b" data-act="skipturn">Skip to my turn</button>
+      <button class="b" data-act="shot">Send next shot</button>
+      <button class="b" data-act="auto" id="autoBtn">Auto-play shots</button>
+      <button class="b" data-act="reset">Reset</button>
+      <button class="evchip" data-act="showev" id="evChip">No camera events yet</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="view" id="v-presenter" aria-label="All screens">
+    <div class="presenter">
+      <div><p class="label cap">Player phone</p><div class="bezel"><div class="screen"><div class="ph" data-phone></div></div></div></div>
+      <div class="col">
+        <div><p class="label cap">Bar TV · Table 1 livestream</p><div data-tv></div></div>
+        <div><p class="label cap">Counter tablet · staff view</p><div data-venue></div></div>
+      </div>
+    </div>
+  </section>
+  <section class="view solo" id="v-phone" aria-label="Player phone"><div class="bezel"><div class="screen"><div class="ph" data-phone></div></div></div></section>
+  <section class="view" id="v-venue" aria-label="Counter tablet"><div data-venue></div>
+    <section class="staffbox" aria-label="Staff tools">
+      <div class="sb-hd"><span class="sign">Staff tools</span>
+        <label class="label" for="sTable">Table</label><select id="sTable"><option value="T1">Table 1 (camera)</option><option value="T2">Table 2</option><option value="T3">Table 3</option><option value="T4">Table 4</option></select>
+        <span class="sb-now" id="sNow" role="status"></span></div>
+      <div class="sb-grid">
+        <div class="sb-g"><span class="label">Fix the game in play</span>
+          <div class="sb-row"><button class="b" data-act="s-switch_turn" id="sSwitch" title="Give the turn to the other player">Switch turn</button><button class="b" data-act="s-foul" id="sFoul" title="The other player gets ball in hand">Call a foul</button><button class="b" data-act="s-undo" id="sUndo" title="Take back the last shot or staff change on this table">Undo last change</button></div>
+          <div class="sb-row"><span class="sb-w">Winner</span><select id="sWho" aria-label="Winner"></select><button class="b" data-act="s-end" id="sEnd">Declare winner</button></div>
+          <div class="sb-row"><span class="sb-w">Balls</span><select id="sWho2" aria-label="Player"></select><span class="sb-w">plays</span><select id="sGroup" aria-label="Solids or stripes"><option value="solids">solids</option><option value="stripes">stripes</option></select><button class="b" data-act="s-group" id="sGrp">Set</button></div>
+        </div>
+        <div class="sb-g"><span class="label">Start a match by hand</span>
+          <div class="sb-row"><input id="sP1" placeholder="Breaks first" aria-label="Player who breaks" maxlength="24"><span class="sb-w">vs</span><input id="sP2" placeholder="Opponent" aria-label="Opponent" maxlength="24">
+            <select id="sGame" aria-label="Game"><option value="8">8-ball</option><option value="9">9-ball</option><option value="10">10-ball</option></select>
+            <button class="b go" data-act="s-start">Start match</button></div>
+        </div>
+        <div class="sb-g"><span class="label">Between games</span>
+          <div class="sb-row"><button class="b" data-act="s-next_match" id="sNext" title="Call the next names on the board to this table">Call next players</button><button class="b danger" data-act="s-reset_table" id="sClear" title="Stop the game and empty this table">Clear table</button></div>
+        </div>
+      </div>
+    </section>
+  </section>
+  <section class="view" id="v-camera" aria-label="Table camera"><div data-camera></div></section>
+  <section class="view" id="v-live" aria-label="Bar TV"><div data-tv></div></section>
+</main>
+<footer class="wrap">Demo venue with made-up players. Shot events come from a recorded game until a camera is connected.</footer>
+
+<dialog id="settings">
+  <form method="dialog" class="dlg">
+    <h3>Connect to n8n</h3>
+    <p>Import <span class="mono">pool-referee.n8n.json</span>, activate it, then paste your webhook base URL. Every phone that opens <span class="mono">{base}/pool-app</span> shares one queue.</p>
+    <label class="label" for="baseInput">Webhook base URL</label>
+    <input id="baseInput" type="url" placeholder="http://localhost:5678/webhook" autocomplete="off" spellcheck="false">
+    <p id="testRes" role="status"></p>
+    <div class="row2">
+      <button type="button" class="b" data-act="use-demo">Use demo data</button>
+      <button type="button" class="b go" data-act="connect">Test and connect</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="evDlg">
+  <form method="dialog" class="dlg">
+    <h3>Last camera event</h3>
+    <p>What the vision service sends to n8n after each shot: <span class="mono">GET {base}/pool?action=shot&amp;table=T1&amp;event=…</span></p>
+    <pre id="evPre">No shots sent yet.</pre>
+    <div class="row2"><button class="b go" value="ok">Close</button></div>
+  </form>
+</dialog>
+<dialog id="askDlg" aria-labelledby="askTitle">
+  <form class="dlg" id="askForm">
+    <h3 id="askTitle">Ask the referee</h3>
+    <p>An AI referee that knows the house rules and the live board. Try “When’s my turn?” or “Is it a foul if I scratch on the 8?”</p>
+    <div id="askLog" class="asklog" aria-live="polite"></div>
+    <label class="label" for="askInput">Your question</label>
+    <input id="askInput" type="text" maxlength="200" placeholder="Rules, fouls, your place in line" autocomplete="off" enterkeyhint="send">
+    <div class="row2"><button type="button" class="b" data-act="askclose">Close</button><button type="submit" class="b go" id="askSend">Ask</button></div>
+  </form>
+</dialog>
+<dialog id="confirmDlg" aria-labelledby="cfTitle" aria-describedby="cfText">
+  <form method="dialog" class="dlg">
+    <h3 id="cfTitle"></h3>
+    <p id="cfText"></p>
+    <div class="row2"><button class="b" value="no" id="cfNo"></button><button class="b danger fill" value="yes" id="cfYes"></button></div>
+  </form>
+</dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ===== Pool Referee engine. The same code runs in the browser demo and inside the n8n workflow. =====
+const RULES = { maxWins: 3, checkinSec: 180, simCheckinSec: 40, simVoteSec: 3, simConfirmSec: 3, avgGameMin: { '8-ball': 14, '9-ball': 11, '10-ball': 12 }, k: 32, startRating: 1200, games: ['8-ball', '9-ball', '10-ball'], aiReviewBelow: 0.6, undoDepth: 8 };
+// Balls on the table at the start of each game type.
+const BALLS = gt => Array.from({ length: gt === '9-ball' ? 9 : gt === '10-ball' ? 10 : 15 }, (_, i) => i + 1);
+const TABLE = { W: 1000, H: 500, R: 11, pockets: [[0, 0], [500, -6], [1000, 0], [0, 500], [500, 506], [1000, 500]] };
+const MIN = 60000;
+function groupOf(b) { b = Number(b); return b === 8 ? 'eight' : b < 8 ? 'solids' : 'stripes'; }
+function otherSide(s) { return s === 'champ' ? 'challenger' : 'champ'; }
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+function rackPositions() {
+  const R = TABLE.R, rows = [[1], [10, 2], [3, 8, 11], [12, 5, 13, 4], [6, 14, 7, 15, 9]];
+  const pos = { cue: [250, 250] };
+  rows.forEach((row, i) => row.forEach((b, j) => { pos[b] = [Math.round(750 + i * (2 * R * 0.87 + 0.6)), Math.round(250 + (j - i / 2) * (2 * R + 0.8))]; }));
+  return pos;
+}
+
+function seedState(now) {
+  const P = (name, rating, w, l) => ({ name, rating, w, l });
+  const seat = (pid, name) => ({ pid, name, ticket: null, real: false, present: true });
+  return {
+    v: 1, skew: 0, seq: 101, createdAt: now, flags: {},
+    venue: { name: 'Loopool', note: 'Demo venue · fake players' },
+    players: {
+      p_sam: P('Sam', 1340, 18, 9), p_lee: P('Lee', 1255, 11, 10), p_ana: P('Ana', 1410, 24, 8), p_kai: P('Kai', 1175, 6, 9),
+      p_noor: P('Noor', 1305, 15, 11), p_jules: P('Jules', 1230, 9, 9), p_kim: P('Kim', 1265, 12, 10), p_ravi: P('Ravi', 1190, 7, 9),
+      p_priya: P('Priya', 1190, 5, 6), p_diego: P('Diego', 1280, 13, 10),
+    },
+    tables: [
+      { id: 'T1', name: 'Table 1', ref: true, gameType: '8-ball', champ: seat('p_sam', 'Sam'), challenger: seat('p_lee', 'Lee'), streak: 1, game: { id: 'g1', mode: 'sim', rated: true, startedAt: now - 9 * MIN, endsAt: now + 5 * MIN, simWinner: 'champ' } },
+      { id: 'T2', name: 'Table 2', ref: false, gameType: '9-ball', champ: seat('p_ana', 'Ana'), challenger: seat('p_kai', 'Kai'), streak: 2, game: { id: 'g2', mode: 'sim', rated: false, startedAt: now - 4 * MIN, endsAt: now + 16 * MIN, simWinner: 'champ' } },
+      { id: 'T3', name: 'Table 3', ref: false, gameType: '8-ball', champ: seat('p_noor', 'Noor'), challenger: seat('p_jules', 'Jules'), streak: 1, game: { id: 'g3', mode: 'sim', rated: false, startedAt: now - 12 * MIN, endsAt: now + 3 * MIN, simWinner: 'challenger' } },
+      { id: 'T4', name: 'Table 4', ref: false, gameType: '9-ball', champ: seat('p_kim', 'Kim'), challenger: seat('p_ravi', 'Ravi'), streak: 1, game: { id: 'g4', mode: 'sim', rated: false, startedAt: now - 2 * MIN, endsAt: now + 22 * MIN, simWinner: 'champ' } },
+    ],
+    queue: [{ ticket: 'A101', pid: 'p_priya', name: 'Priya', gameType: '8-ball', refOnly: false, real: false, status: 'waiting', joinedAt: now - 4 * MIN }],
+    scheduled: [],
+    history: [
+      { at: now - 21 * MIN, table: 'Table 1', winner: 'Sam', loser: 'Ana', rated: true, delta: 19 },
+      { at: now - 34 * MIN, table: 'Table 1', winner: 'Ana', loser: 'Kim', rated: true, delta: 12 },
+    ],
+    feed: [{ at: now - 60000, kind: 'table', text: 'Sam and Lee are playing a rated game on Table 1' }],
+    outbox: [],
+  };
+}
+
+function log(S, now, kind, text, ref) { S.feed.push(Object.assign({ at: now, kind, text }, ref || {})); if (S.feed.length > 40) S.feed.splice(0, S.feed.length - 40); }
+// A message to one player. n8n emails it when the player gave an address. Buttons become links back to n8n
+// ({base}/pool-act?a=checkin&t=A102&k=key), so players can check in, vote on a foul or confirm a result from the email.
+// The key is per ticket and never leaves the server except inside that player's own emails.
+const LINK_ACTIONS = ['checkin', 'vote', 'confirm', 'leave'];
+function actLink(S, q, action, vote) { return (S.base || '') + '/pool-act?a=' + action + '&t=' + encodeURIComponent(q.ticket) + '&k=' + q.key + (vote ? '&v=' + vote : ''); }
+function text(S, now, ticket, msg, notes, opts) {
+  const q = S.queue.find(x => x.ticket === ticket); if (!q || !q.real) return;
+  opts = opts || {};
+  const n = { at: now, ticket, name: q.name, email: q.email || '', subject: opts.subject || msg, text: msg,
+    buttons: (opts.buttons || []).map(b => ({ label: b[0], url: actLink(S, q, b[1], b[2]), style: b[3] || '' })),
+    page: (S.base || '') + '/pool-app#mobile&t=' + encodeURIComponent(q.ticket) };
+  S.outbox.push({ at: n.at, ticket, text: msg }); if (S.outbox.length > 40) S.outbox.splice(0, S.outbox.length - 40);
+  if (q.email) notes.push(n);
+}
+function textSeats(S, t, now, notes, msgFor, opts) {
+  ['champ', 'challenger'].forEach(side => { const s = t[side]; if (s && s.ticket) text(S, now, s.ticket, msgFor(side), notes, typeof opts === 'function' ? opts(side) : opts); });
+}
+function eligible(q, t) { return q.status === 'waiting' && q.gameType === t.gameType && (!q.refOnly || t.ref); }
+function seatFromTicket(q, now) { return { pid: q.pid, name: q.name, ticket: q.ticket, real: !!q.real, present: false, calledAt: now }; }
+
+// Player stats (shots scored by the AI, fouls, best shot) for the leaderboard and badges.
+function stat(S, pid) { const p = S.players[pid]; if (!p) return null; if (p.shots == null) Object.assign(p, { shots: 0, scoreSum: 0, fouls: 0, best: 0 }); return p; }
+function findPid(S, name, create) {
+  const n = String(name || '').trim().replace(/\s+/g, ' ').slice(0, 24); if (!n) return null;
+  let pid = Object.keys(S.players).find(k => S.players[k].name.toLowerCase() === n.toLowerCase());
+  if (!pid && create) { pid = 'p_' + n.toLowerCase().replace(/[^a-z0-9]+/g, '') + '_' + (++S.seq); S.players[pid] = { name: n, rating: RULES.startRating, w: 0, l: 0 }; }
+  return pid;
+}
+// Rating change: Elo with K = 48 for a player's first 5 matches, then 32, times a margin
+// multiplier (1 + 0.05 x balls the loser still had), plus up to +-5 from the player's average AI shot score this game.
+function ratingChange(S, g, W, L, loserLeft) {
+  const pw = S.players[W.pid], pl = S.players[L.pid];
+  const E = 1 / (1 + Math.pow(10, (pl.rating - pw.rating) / 400));
+  const mult = 1 + 0.05 * Math.max(0, Math.min(7, loserLeft || 0));
+  const perf = side => { const ss = (g.shots || []).filter(s => s.side === side && s.score != null); return ss.length ? ss.reduce((a, s) => a + s.score, 0) / ss.length : 50; };
+  const bonus = v => Math.max(-5, Math.min(5, (v - 50) / 10));
+  const K = p => ((p.w || 0) + (p.l || 0)) < 5 ? 48 : 32;
+  return { dW: Math.round(K(pw) * (1 - E) * mult + bonus(perf(W.side))), dL: Math.round(-K(pl) * (1 - E) * mult + bonus(perf(L.side))) };
+}
+
+function startGame(S, t, now) {
+  const real = t.champ.real || t.challenger.real || t.champ.staff || t.challenger.staff;   // staff-started matches are played for real too
+  const mode = t.ref && real ? 'camera' : real ? 'manual' : 'sim';
+  const id = 'g' + (++S.seq);
+  const g = { id, mode, rated: t.ref, startedAt: now, status: 'live' };
+  if (mode === 'sim') {
+    const h = hashStr(t.champ.pid + t.challenger.pid + id);
+    g.endsAt = now + (RULES.avgGameMin[t.gameType] - 3 + (h % 7)) * MIN;
+    const rc = (S.players[t.champ.pid] || {}).rating || 1200, rh = (S.players[t.challenger.pid] || {}).rating || 1200;
+    g.simWinner = (h % 100) < 100 / (1 + Math.pow(10, (rh - rc) / 400)) ? 'champ' : 'challenger';
+  }
+  if (mode === 'camera') {
+    Object.assign(g, { gameType: t.gameType, turn: t.breaker || 'challenger', groups: { champ: null, challenger: null }, onTable: BALLS(t.gameType), positions: t.gameType === '8-ball' ? rackPositions() : null, lastShot: null, shots: [], review: null, ballInHand: false, winner: null, confirm: {} });
+  }
+  if (mode === 'manual') Object.assign(g, { winner: null, confirm: {} });
+  t.game = g; delete t.breaker;
+  [t.champ, t.challenger].forEach(s => { const q = S.queue.find(x => x.ticket === s.ticket); if (q) q.status = 'playing'; });
+  log(S, now, 'table', t.champ.name + ' vs ' + t.challenger.name + ' started on ' + t.name + (mode === 'camera' ? ' (camera referee)' : ''));
+}
+
+function finishGame(S, t, winSide, now, notes, reason) {
+  const g = t.game, W = Object.assign({ side: winSide }, t[winSide]), L = Object.assign({ side: otherSide(winSide) }, t[otherSide(winSide)]);
+  let delta = 0, lossDelta = 0;
+  if (g.rated && S.players[W.pid] && S.players[L.pid]) {
+    const lg = g.groups && g.groups[L.side];
+    const loserLeft = g.mode === 'camera' && (g.gameType || t.gameType) === '8-ball' ? (lg ? g.onTable.filter(b => groupOf(b) === lg).length : 7) : 0;
+    const r = ratingChange(S, g, W, L, loserLeft);
+    delta = r.dW; lossDelta = r.dL;
+    S.players[W.pid].rating += delta; S.players[L.pid].rating += lossDelta; S.players[W.pid].w++; S.players[L.pid].l++;
+  }
+  S.finished = (S.finished || 0) + 1;
+  S.history.unshift({ at: now, table: t.name, winner: W.name, loser: L.name, rated: g.rated, delta, lossDelta, reason: reason || '' });
+  if (S.history.length > 20) S.history.length = 20;
+  t.streak = winSide === 'champ' ? t.streak + 1 : 1;
+  log(S, now, 'result', W.name + ' beat ' + L.name + ' on ' + t.name + (g.rated ? ' (+' + delta + ' rating)' : '') + (reason ? ' · ' + reason : ''));
+  const lq = S.queue.find(x => x.ticket === L.ticket);
+  if (lq) { lq.status = 'done'; lq.result = { won: false, gameId: g.id, opponent: W.name, delta: lossDelta, rated: g.rated, rating: (S.players[L.pid] || {}).rating, table: t.name }; text(S, now, lq.ticket, 'Good game! ' + W.name + ' won on ' + t.name + (g.rated ? ' (' + lossDelta + ' rating)' : '') + '. Want another? Put your name back on the board.', notes, { subject: 'Good game on ' + t.name }); }
+  const wq = S.queue.find(x => x.ticket === W.ticket);
+  if (wq) { wq.result = { won: true, gameId: g.id, opponent: L.name, delta, rated: g.rated, rating: (S.players[W.pid] || {}).rating, table: t.name, streak: t.streak, stayOn: true }; text(S, now, wq.ticket, 'You beat ' + L.name + ' on ' + t.name + (g.rated ? ' (+' + delta + ' rating, now ' + wq.result.rating + ')' : '') + '. Winner stays on, so the table is yours for the next game.', notes, { subject: 'You won on ' + t.name }); }
+  t.champ = Object.assign({}, W, { present: true });
+  t.challenger = null; t.lastGame = { id: g.id, winner: W.name, loser: L.name, at: now };
+  t.game = null;
+  const waiting = S.queue.some(q => eligible(q, t));
+  if (t.streak >= RULES.maxWins && waiting) {
+    log(S, now, 'table', W.name + ' won ' + t.streak + ' in a row and hands over ' + t.name + ' (house rule: max ' + RULES.maxWins + ')');
+    if (wq) { wq.status = 'done'; wq.result.stayOn = false; wq.result.retired = true; text(S, now, wq.ticket, 'You won ' + t.streak + ' in a row. House rule: the table goes to the next players now. Nice run!', notes); }
+    t.champ = null; t.streak = 0;
+  }
+}
+
+function resolveReview(S, t, decision, now, by) {
+  const g = t.game, r = g.review; if (!r) return;
+  const shot = g.shots.find(s => s.no === r.shotNo);
+  if (decision === 'foul') {
+    g.turn = r.ifFoul; g.ballInHand = true;
+    if (shot) { shot.fouls.push(r.foul.text + ' (confirmed' + (by ? ' by ' + by : '') + ')'); shot.possible = []; }
+    log(S, now, 'foul', 'Foul confirmed on shot ' + r.shotNo + ': ' + r.foul.text + '. ' + t[r.ifFoul].name + ' has ball in hand');
+  } else {
+    g.turn = r.ifClean;
+    if (shot) { shot.possible = []; shot.cleared = true; }
+    log(S, now, 'foul', 'No foul on shot ' + r.shotNo + (by ? ' (' + by + ')' : '') + '. ' + t[r.ifClean].name + ' to shoot');
+  }
+  g.status = 'live'; g.review = null;
+}
+
+function settle(S, now, notes) {
+  for (let guard = 0, changed = true; changed && guard < 30; guard++) {
+    changed = false;
+    // scheduled walk-ins
+    S.scheduled.filter(e => e.at <= now).forEach(e => {
+      if (e.type === 'join' && !S.queue.some(q => q.pid === e.pid && ['waiting', 'called', 'playing'].includes(q.status))) {
+        S.queue.push({ ticket: 'A' + (++S.seq), pid: e.pid, name: e.name, gameType: e.gameType, refOnly: e.refOnly, real: false, status: 'waiting', joinedAt: now });
+        log(S, now, 'queue', e.name + ' joined the queue (' + e.gameType + (e.refOnly ? ', camera table only' : '') + ')');
+      }
+      changed = true;
+    });
+    S.scheduled = S.scheduled.filter(e => e.at > now);
+    for (const t of S.tables) {
+      const g = t.game;
+      if (g && g.mode === 'sim' && g.endsAt <= now) { finishGame(S, t, g.simWinner, now, notes); changed = true; continue; }
+      if (g && g.status === 'review' && g.review) {
+        for (const side of ['champ', 'challenger']) {
+          if (!t[side].real && !t[side].staff && !g.review.votes[side] && now - g.review.at >= RULES.simVoteSec * 1000) {
+            g.review.votes[side] = g.review.source === 'player' && g.review.accused === side ? 'dispute' : 'accept';
+            log(S, now, 'foul', t[side].name + (g.review.votes[side] === 'accept' ? ' accepted' : ' disputed') + ' the foul call');
+            changed = true;
+          }
+        }
+        const v = g.review.votes;
+        if (v.champ && v.challenger && !g.review.staff) {
+          if (v.champ === v.challenger) resolveReview(S, t, v.champ === 'accept' ? 'foul' : 'clean', now, 'both players');
+          else { g.review.staff = true; log(S, now, 'staff', 'Players disagree on shot ' + g.review.shotNo + ' on ' + t.name + '. Staff decision needed', { table: t.id, game: g.id, shot: g.review.shotNo }); }   // the counter tablet shows this in red until staff decide
+          changed = true;
+        }
+      }
+      if (g && g.status === 'confirm') {
+        for (const side of ['champ', 'challenger']) {
+          if (!t[side].real && !g.confirm[side] && now - g.confirmAt >= RULES.simConfirmSec * 1000) { g.confirm[side] = true; changed = true; }
+        }
+        if (g.confirm.champ && g.confirm.challenger) { finishGame(S, t, g.winner, now, notes, g.winReason); changed = true; continue; }
+      }
+      if (!t.game) {
+        for (const side of ['champ', 'challenger']) {
+          const s = t[side];
+          if (!s) continue;
+          if (!s.present && !s.real && now - s.calledAt >= RULES.simCheckinSec * 1000) { s.present = true; log(S, now, 'queue', s.name + ' checked in at ' + t.name); changed = true; }
+          if (!s.present && s.real && now - s.calledAt >= RULES.checkinSec * 1000) {
+            const q = S.queue.find(x => x.ticket === s.ticket);
+            if (q) { q.status = 'missed'; text(S, now, q.ticket, 'You missed your turn at ' + t.name + ', so the next name on the board was called. Put your name back on the board any time.', notes, { subject: 'You missed your turn at ' + t.name }); }
+            log(S, now, 'queue', s.name + ' missed the check-in for ' + t.name);
+            t[side] = null; changed = true;
+          }
+        }
+        if (!t.champ && t.challenger) { t.champ = t.challenger; t.challenger = null; t.streak = 0; changed = true; }
+        for (const side of ['champ', 'challenger']) {
+          if (t[side]) continue;
+          const q = S.queue.find(x => eligible(x, t));
+          if (!q) break;
+          q.status = 'called'; q.table = t.id; q.calledAt = now; q.seat = side;
+          t[side] = seatFromTicket(q, now);
+          log(S, now, 'queue', q.name + ' was called to ' + t.name);
+          text(S, now, q.ticket, 'It\'s your turn! Go to ' + t.name + ' and check in within ' + Math.round(RULES.checkinSec / 60) + ' minutes, or the next name on the board is called.', notes, { subject: 'Your table is ready: ' + t.name, buttons: [['I\'m at the table', 'checkin']] });
+          changed = true;
+        }
+        if (t.champ && t.challenger && t.champ.present && t.challenger.present) { startGame(S, t, now); changed = true; }
+      }
+    }
+  }
+}
+
+function applyShot(S, t, ev, now, notes) {
+  notes = notes || [];
+  const g = t.game;
+  if (!g || g.mode !== 'camera') return 'The camera is not following a game on ' + t.name + ' right now.';
+  if (g.status === 'review') return 'Waiting for the foul review on shot ' + g.review.shotNo + '.';
+  if (g.status !== 'live') return 'This game is over.';
+  const gt = g.gameType || t.gameType || '8-ball', eightBall = gt === '8-ball';
+  const side = g.turn, other = otherSide(side), nm = s => t[s].name;
+  const before = g.onTable.slice();
+  let potted = (ev.potted || []).map(Number).filter(b => before.includes(b));
+  const mine = eightBall ? g.groups[side] : null;
+  const leftBefore = mine ? before.filter(b => groupOf(b) === mine).length : null;
+  const fouls = [], possible = [];
+  const ai = ev.ai || null;                                   // the AI's reading of the shot photos
+  const reviewBelow = ai ? RULES.aiReviewBelow : 0.8;
+  const fcUnknown = ev.firstContact === 'unknown';            // the photos don't show which ball was hit first
+  const fc = fcUnknown || ev.firstContact == null || ev.firstContact === '' ? null : Number(ev.firstContact);
+  const isBreak = g.shots.length === 0;
+  if (fc == null && !fcUnknown) fouls.push({ code: 'no-contact', text: 'Cue ball didn\'t hit any ball' });
+  if (ev.cueBallPotted) fouls.push({ code: 'scratch', text: 'Scratch: the cue ball went in a pocket' });
+  if (eightBall && fc != null && !isBreak) {                  // on the break any ball may be hit first
+    const legal = mine ? (leftBefore > 0 ? groupOf(fc) === mine : fc === 8) : fc !== 8;
+    if (!legal) {
+      const conf = ev.confidence && ev.confidence.firstContact != null ? Number(ev.confidence.firstContact) : 0.95;
+      (conf < reviewBelow ? possible : fouls).push({ code: 'wrong-ball', text: nm(side) + ' hit the ' + fc + ' first', conf });
+    }
+  }
+  if (ai && ai.foul && !fouls.length && !possible.length) {  // a foul only the AI saw in the photos
+    const conf = ai.confidence == null ? 0.95 : Number(ai.confidence);
+    (conf < reviewBelow ? possible : fouls).push({ code: 'ai', text: ai.foulReason || 'Foul seen by the AI referee', conf });
+  }
+  const money = gt === '9-ball' ? 9 : gt === '10-ball' ? 10 : 8;
+  const respot = !eightBall && potted.includes(money) && (fouls.length || possible.length);
+  if (respot) potted = potted.filter(b => b !== money);       // 9/10-ball: the money ball potted on a foul comes back
+  g.onTable = before.filter(b => !potted.includes(b));
+  const from = g.positions;
+  g.positions = ev.positions || (ai ? null : g.positions);    // the AI method sends photos, not ball positions
+  g.lastShot = { no: g.shots.length + 1, cuePath: ev.cuePath || null, pockets: ev.pockets || {}, from };
+  const shot = { no: g.shots.length + 1, side, shooter: nm(side), potted, firstContact: fc, scratch: !!ev.cueBallPotted, fouls: fouls.map(f => f.text), possible: possible.map(f => f.text + ' (' + Math.round(f.conf * 100) + '% sure)'), at: now, clip: ev.clip ? String(ev.clip).slice(0, 60) : null };
+  if (ai) Object.assign(shot, { score: ai.score, grade: ai.grade, tip: ai.tip || '', observations: ai.observations || '', breakdown: ai.breakdown || null, confidence: ai.confidence, needsReview: !!ai.needsReview, ai: ai.observations ? String(ai.observations).slice(0, 240) : null });
+  const lines = [];
+  const confirmFlow = (winner, why) => {
+    g.winner = winner; g.winReason = why; g.status = 'confirm'; g.confirmAt = now; g.confirm = {}; g.turn = null;
+    lines.push('Shot ' + shot.no + ': ' + why + '. ' + nm(winner) + ' wins! Waiting for both players to confirm.');
+    textSeats(S, t, now, notes, s => why + '. ' + (s === winner ? 'You win!' : nm(winner) + ' wins.') + ' Confirm the result so the ratings update.', { subject: 'Game over on ' + t.name + ': please confirm', buttons: [['Confirm result', 'confirm']] });
+  };
+  if (eightBall && potted.includes(8) && !isBreak) {
+    const cleared = mine && leftBefore === 0;
+    const ok = cleared && !fouls.length && !possible.length;
+    confirmFlow(ok ? side : other, ok ? nm(side) + ' potted the 8' : (cleared ? nm(side) + ' fouled on the 8' : nm(side) + ' potted the 8 too early'));
+  } else if (!eightBall && potted.includes(money)) {
+    confirmFlow(side, nm(side) + ' potted the ' + money);
+  } else {
+    if (eightBall && !mine && !fouls.length && !possible.length && potted.length && !isBreak) {
+      // open table: the first legal pot after the break sets the groups (majority if both kinds went down)
+      const s1 = potted.filter(b => groupOf(b) === 'solids').length, s2 = potted.filter(b => groupOf(b) === 'stripes').length;
+      if (s1 || s2) { const grp = s1 >= s2 ? 'solids' : 'stripes'; g.groups[side] = grp; g.groups[other] = grp === 'solids' ? 'stripes' : 'solids'; shot.note = nm(side) + ' takes ' + grp; lines.push(nm(side) + ' takes ' + grp); }
+    }
+    const own = eightBall ? (g.groups[side] ? potted.some(b => groupOf(b) === g.groups[side]) : potted.length > 0) : potted.length > 0;
+    const desc = 'Shot ' + shot.no + ' · ' + nm(side) + (potted.length ? ' potted ' + potted.join(' and ') : ' missed') + (respot ? ' (the ' + money + ' comes back on a foul)' : '');
+    if (possible.length) {
+      g.status = 'review';
+      g.review = { shotNo: shot.no, side, accused: side, source: 'ai', foul: possible[0], threshold: reviewBelow, ball: fc, clip: shot.clip, votes: {}, at: now, staff: false, ifFoul: other, ifClean: own && !fouls.length ? side : other, replay: { from, to: g.positions, cuePath: g.lastShot.cuePath, pockets: g.lastShot.pockets, highlight: fc } };
+      g.turn = null;
+      lines.unshift(desc);
+      lines.push('Possible foul: ' + possible[0].text + ' (' + Math.round(possible[0].conf * 100) + '% sure). Play paused for review.');
+      textSeats(S, t, now, notes, () => 'Possible foul on shot ' + shot.no + ': ' + possible[0].text + ' (the camera is ' + Math.round(possible[0].conf * 100) + '% sure). Play is paused until you both decide. ' + (ai ? 'Open your ticket to see the camera photo' : 'Watch the replay on your phone') + ', or answer here.', { subject: 'Possible foul on ' + t.name + ', shot ' + shot.no, buttons: [['Foul', 'vote', 'accept', 'foul'], ['No foul', 'vote', 'dispute']] });
+    } else if (fouls.length) {
+      g.turn = other; g.ballInHand = true;
+      lines.unshift(desc);
+      lines.push('Foul: ' + fouls.map(f => f.text).join(', ') + '. ' + nm(other) + ' has ball in hand.');
+    } else {
+      g.turn = own ? side : other; g.ballInHand = false;
+      lines.unshift(desc + (own ? '. Still shooting' : '. ' + nm(other) + ' to shoot'));
+    }
+  }
+  shot.reason = lines.join(' · ');
+  g.lastReason = shot.reason;
+  g.shots.push(shot);
+  if (ai && ai.score != null) { const st = stat(S, t[side].pid); if (st) { st.shots++; st.scoreSum += Number(ai.score) || 0; st.best = Math.max(st.best, Number(ai.score) || 0); if (fouls.length) st.fouls++; } }
+  lines.forEach(l => log(S, now, possible.length || fouls.length ? 'foul' : 'shot', t.name + ' · ' + l));
+  if (shot.ai) log(S, now, 'ai', t.name + ' · ' + shot.ai);
+  return null;
+}
+
+function findTicket(S, ticket) { return S.queue.find(q => q.ticket === ticket); }
+function tableOf(S, q) { return q && q.table ? S.tables.find(t => t.id === q.table) : null; }
+function sideOf(t, q) { if (!t || !q) return null; if (t.champ && t.champ.ticket === q.ticket) return 'champ'; if (t.challenger && t.challenger.ticket === q.ticket) return 'challenger'; return null; }
+
+function etas(S, now) {
+  const free = {};
+  S.tables.forEach(t => {
+    const avg = RULES.avgGameMin[t.gameType] * MIN;
+    if (t.game) free[t.id] = t.game.mode === 'sim' ? t.game.endsAt : Math.max(now + 2 * MIN, t.game.startedAt + avg);
+    else free[t.id] = t.champ && t.challenger ? now + 2 * MIN : now;
+  });
+  const out = {};
+  S.queue.filter(q => q.status === 'waiting').forEach(q => {
+    const cands = S.tables.filter(t => t.gameType === q.gameType && (!q.refOnly || t.ref));
+    if (!cands.length) { out[q.ticket] = null; return; }
+    let best = cands[0]; cands.forEach(t => { if (free[t.id] < free[best.id]) best = t; });
+    out[q.ticket] = { min: Math.max(0, Math.round((free[best.id] - now) / MIN)), table: best.name };
+    free[best.id] += RULES.avgGameMin[best.gameType] * MIN;
+  });
+  return out;
+}
+
+function publicState(S, now, ticket) {
+  const E = etas(S, now);
+  const rating = pid => (S.players[pid] || {}).rating || RULES.startRating;
+  const seatPub = (s, t, side) => s ? { name: s.name, rating: rating(s.pid), present: !!s.present, real: !!s.real, ticket: s.ticket ? s.ticket : null, checkinLeft: !s.present && s.calledAt ? Math.max(0, Math.round(((s.real ? RULES.checkinSec : RULES.simCheckinSec) * 1000 - (now - s.calledAt)) / 1000)) : null, streak: side === 'champ' ? t.streak : 0 } : null;
+  const tables = S.tables.map(t => {
+    const g = t.game;
+    let status = 'empty';
+    if (g) status = g.status === 'review' ? (g.review && g.review.staff ? 'staff' : 'review') : g.status === 'confirm' ? 'confirm' : 'playing';
+    else if (t.champ && t.challenger) status = 'checkin';
+    else if (t.champ) status = 'waiting';
+    const pub = { id: t.id, name: t.name, ref: t.ref, gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
+    if (g) {
+      pub.game = { id: g.id, mode: g.mode, rated: g.rated, startedAt: g.startedAt, minutes: Math.max(0, Math.round((now - g.startedAt) / MIN)), left: g.mode === 'sim' ? Math.max(1, Math.round((g.endsAt - now) / MIN)) : null, status: g.status };
+      if (g.mode === 'camera') Object.assign(pub.game, { gameType: g.gameType || t.gameType, lastReason: g.lastReason || '', turn: g.turn, groups: g.groups, onTable: g.onTable, positions: g.positions, lastShot: g.lastShot, shots: g.shots.slice(-14), review: g.review, ballInHand: g.ballInHand, winner: g.winner, winReason: g.winReason || '', confirm: g.confirm });
+      if (g.mode === 'manual') Object.assign(pub.game, { winner: g.winner, confirm: g.confirm });
+    }
+    return pub;
+  });
+  const waiting = S.queue.filter(q => q.status === 'waiting' || q.status === 'called');
+  const queue = waiting.map(q => ({ ticket: q.ticket, name: q.name, gameType: q.gameType, refOnly: q.refOnly, status: q.status, table: q.table ? (S.tables.find(t => t.id === q.table) || {}).name : null, eta: E[q.ticket] || null, position: q.status === 'waiting' ? S.queue.filter(x => x.status === 'waiting').indexOf(q) + 1 : 0 }));
+  // Leaderboard with shot stats and badges: sharpshooter (best average shot, 5+ shots), fair play (fewest fouls per shot, 5+ shots), best shot (85+).
+  const leaderboard = Object.entries(S.players).map(([pid, p]) => ({ pid, name: p.name, rating: p.rating, w: p.w, l: p.l, matches: (p.w || 0) + (p.l || 0), winRate: (p.w || 0) + (p.l || 0) ? Math.round(100 * (p.w || 0) / ((p.w || 0) + (p.l || 0))) : null, shots: p.shots || 0, avgShot: p.shots ? Math.round(p.scoreSum / p.shots) : null, fouls: p.fouls || 0, best: p.best || 0, badges: [] }));
+  const top = (f, ok) => leaderboard.filter(ok).sort((a, b) => f(b) - f(a))[0];
+  const sharp = top(r => r.avgShot, r => r.shots >= 5); if (sharp) sharp.badges.push('sharpshooter');
+  const fair = top(r => -r.fouls / r.shots, r => r.shots >= 5); if (fair) fair.badges.push('fair_play');
+  const bestShot = top(r => r.best, r => r.shots >= 1); if (bestShot && bestShot.best >= 85) bestShot.badges.push('best_shot');
+  leaderboard.sort((a, b) => b.rating - a.rating); leaderboard.length = Math.min(leaderboard.length, 10);
+  const out = { ok: true, now, venue: S.venue, rules: { maxWins: RULES.maxWins, checkinSec: RULES.checkinSec }, tables, queue, leaderboard, recent: S.history.slice(0, 6), feed: S.feed.slice(-14).reverse() };
+  const q = ticket ? findTicket(S, ticket) : null;
+  if (q) {
+    const t = tableOf(S, q), side = sideOf(t, q);
+    out.me = { ticket: q.ticket, name: q.name, pid: q.pid, emailOn: !!q.email, gameType: q.gameType, refOnly: q.refOnly, status: q.status, rating: rating(q.pid), position: q.status === 'waiting' ? S.queue.filter(x => x.status === 'waiting').indexOf(q) + 1 : 0, eta: E[q.ticket] || null, table: t ? t.id : null, side, result: q.result || null, texts: S.outbox.filter(n => n.ticket === q.ticket).slice(-4).reverse().map(n => ({ at: n.at, text: n.text })) };
+  }
+  return out;
+}
+
+// ---- AI shot reading -> engine ----
+// The AI names balls like "solid 3", "stripe ?", "8 ball", "cue ball". Unknown numbers take the lowest ball of that kind still on the table.
+function ballsFromAI(list, onTable, gt) {
+  const out = [], left = onTable.slice(); let scratch = false;
+  const take = n => { const i = left.indexOf(n); if (i >= 0) { left.splice(i, 1); out.push(n); } };
+  for (const raw of list || []) {
+    const t = String(raw).toLowerCase(), m = t.match(/\b(1[0-5]|[1-9])\b/), n = m ? +m[1] : null;
+    if (n === null && /cue|white/.test(t)) { scratch = true; continue; }
+    if (n !== null) { take(n); continue; }
+    if (gt === '8-ball') {
+      if (/eight|black/.test(t)) take(8);
+      else if (/stripe/.test(t)) { const b = left.filter(x => x > 8).sort((a, c) => a - c)[0]; if (b) take(b); }
+      else if (/solid/.test(t)) { const b = left.filter(x => x < 8).sort((a, c) => a - c)[0]; if (b) take(b); }
+    }
+  }
+  return { potted: out, scratch };
+}
+function firstBallFromAI(v) { if (v == null) return 'unknown'; const m = String(v).match(/\b(1[0-5]|[1-9])\b/); return m ? +m[1] : (/eight|black/i.test(v) ? 8 : 'unknown'); }
+
+// ---- staff tools: undo keeps snapshots of the table, players, results and queue (newest last) ----
+function pushUndo(S, t) {
+  S.undo = S.undo || {}; const st = S.undo[t.id] = S.undo[t.id] || [];
+  st.push(clone({ t, players: S.players, history: S.history, queue: S.queue, finished: S.finished || 0 }));
+  if (st.length > RULES.undoDepth) st.shift();
+}
+function popUndo(S, t) { const st = S.undo && S.undo[t.id]; if (st && st.length) st.pop(); }
+function doUndo(S, t, now) {
+  const st = S.undo && S.undo[t.id]; if (!st || !st.length) return false;
+  const snap = st.pop(), i = S.tables.findIndex(x => x.id === t.id);
+  S.tables[i] = snap.t; S.players = snap.players; S.history = snap.history; S.queue = snap.queue; S.finished = snap.finished;
+  log(S, now, 'table', 'Staff undid the last change on ' + snap.t.name);
+  return true;
+}
+function sideByName(t, name) { const n = String(name || '').trim().toLowerCase(); return ['champ', 'challenger'].find(sd => t[sd] && t[sd].name.toLowerCase() === n) || null; }
+const STAFF_ACTIONS = ['start_match', 'switch_turn', 'foul', 'set_group', 'end_match', 'next_match', 'undo', 'reset_table'];
+
+// One entry point for every request. Returns the new state, the response for the app, texts to send and a finished-game summary.
+function handle(S, action, p, realNow) {
+  const notes = [];
+  const now = () => realNow + (S.skew || 0);
+  const fail = (msg, code) => ({ S, response: Object.assign(publicState(S, now(), p.ticket), { ok: false, error: msg, code: code || 400 }), notify: notes, finished: null });
+  const finBefore = S.finished || 0;
+  if (p.base) S.base = String(p.base).slice(0, 200);
+  if (p.k != null && p.k !== '') { const kq = p.ticket ? findTicket(S, p.ticket) : null; if (!kq || !kq.key || kq.key !== String(p.k)) return fail('This link doesn\'t match a ticket.', 403); }
+  settle(S, now(), notes);
+  const q = p.ticket ? findTicket(S, p.ticket) : null;
+  switch (action) {
+    case 'state': break;
+    case 'join': {
+      const name = String(p.name || '').trim().slice(0, 24);
+      if (!name) return fail('Please enter your name.');
+      const gameType = RULES.games.includes(p.gameType) ? p.gameType : '8-ball';
+      const refOnly = (p.refOnly === true || p.refOnly === 'true' || p.refOnly === '1') && gameType === '8-ball';
+      let pid = Object.keys(S.players).find(k => S.players[k].name.toLowerCase() === name.toLowerCase());
+      if (pid && S.queue.some(x => x.pid === pid && ['waiting', 'called', 'playing'].includes(x.status))) return fail(name + ' is already in the queue or at a table.');
+      if (!pid) { pid = 'p_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '') + '_' + (S.seq + 1); S.players[pid] = { name, rating: RULES.startRating, w: 0, l: 0 }; }
+      const em = String(p.email || '').trim().slice(0, 80);
+      const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em) ? em : '';
+      if (em && !email) return fail('That email address doesn\'t look right.');
+      const ticket = 'A' + (++S.seq);
+      const key = Math.random().toString(36).slice(2, 10);
+      S.queue.push({ ticket, pid, name, email, key, gameType, refOnly, real: true, status: 'waiting', joinedAt: now() });
+      p.ticket = ticket;
+      log(S, now(), 'queue', name + ' joined the queue (' + gameType + (refOnly ? ', camera table only' : '') + ')');
+      text(S, now(), ticket, 'You\'re on the board at ' + S.venue.name + ' with ticket ' + ticket + '. ' + (email ? 'We\'ll email you when your table is ready.' : 'Keep this page open: it tells you when your table is ready.'), notes, { subject: 'You\'re on the board: ticket ' + ticket });
+      if (!S.flags.walkIn) { S.flags.walkIn = true; S.scheduled.push({ at: now() + 75000, type: 'join', pid: 'p_diego', name: 'Diego', gameType: '8-ball', refOnly: true }); }
+      settle(S, now(), notes);
+      break;
+    }
+    case 'checkin': {
+      const t = tableOf(S, q), side = sideOf(t, q);
+      if (!q || q.status !== 'called' || !side) return fail('You haven\'t been called to a table yet.');
+      t[side].present = true; log(S, now(), 'queue', q.name + ' checked in at ' + t.name);
+      settle(S, now(), notes);
+      break;
+    }
+    case 'leave': {
+      if (!q) return fail('Ticket not found.');
+      const t = tableOf(S, q), side = sideOf(t, q);
+      if (t && t.game) return fail('Finish your game first.');
+      if (t && side) { t[side] = null; if (side === 'champ') t.streak = 0; }
+      q.status = 'left'; log(S, now(), 'queue', q.name + ' left the queue');
+      settle(S, now(), notes);
+      break;
+    }
+    case 'shot': {
+      const t = S.tables.find(x => x.id === (p.table || 'T1'));
+      let ev = p.event; if (typeof ev === 'string') { try { ev = JSON.parse(ev); } catch (e) { return fail('The shot event is not valid JSON.'); } }
+      if (!t || !ev) return fail('Missing table or shot event.');
+      pushUndo(S, t);
+      const err = applyShot(S, t, ev, now(), notes); if (err) { popUndo(S, t); return fail(err, 409); }
+      break;
+    }
+    case 'shot_ai': {                                    // a shot read by the AI from the camera photos (POST /pool-score)
+      const t = S.tables.find(x => x.id === String(p.table || 'T1').toUpperCase());
+      let sh = p.shot; if (typeof sh === 'string') { try { sh = JSON.parse(sh); } catch (e) { sh = null; } }
+      if (!t) return fail('Unknown table.');
+      if (p.hasFrame) t.frameAt = now();                 // the new photo shows on the TV even if the AI reading failed
+      if (!sh || sh.ok === false) { const r = fail((sh && sh.error) || 'The AI could not read this shot.'); r.response = Object.assign(publicState(S, now(), p.ticket), { ok: false, error: (sh && sh.error) || 'The AI could not read this shot.' }); return r; }
+      const g = t.game;
+      if (g && g.mode === 'camera' && g.status === 'review') return fail('Waiting for the foul review on shot ' + g.review.shotNo + '.', 409);
+      const ai = { score: sh.score, grade: sh.grade, tip: sh.tip, observations: sh.observations, breakdown: sh.breakdown, confidence: sh.confidence, needsReview: !!sh.needs_review, foul: !!(sh.breakdown && sh.breakdown.foul), foulReason: sh.foul_reason };
+      if (!g || g.mode !== 'camera' || g.status !== 'live') {   // no refereed game: a practice shot, scored but not counted
+        t.practice = { at: now(), score: sh.score, grade: sh.grade, tip: sh.tip || '', observations: sh.observations || '', potted: sh.potted_balls || [], foul: ai.foul ? (sh.foul_reason || 'foul') : null };
+        log(S, now(), 'ai', t.name + ' · practice shot: ' + (sh.observations || sh.grade || ''));
+        break;
+      }
+      const b = ballsFromAI(sh.potted_balls, g.onTable, g.gameType || t.gameType);
+      const scratch = b.scratch || sh.cue_ball_outcome === 'scratch';
+      if (scratch && ai.foul && /scratch|cue ball/i.test(ai.foulReason || '')) ai.foul = false;   // the scratch rule already covers it
+      pushUndo(S, t);
+      const err = applyShot(S, t, { potted: b.potted, cueBallPotted: scratch, firstContact: firstBallFromAI(sh.first_contact), confidence: { firstContact: sh.confidence }, ai }, now(), notes);
+      if (err) { popUndo(S, t); return fail(err, 409); }
+      break;
+    }
+    case 'flag': {
+      const t = tableOf(S, q), side = sideOf(t, q), g = t && t.game;
+      if (!g || g.mode !== 'camera' || g.status !== 'live' || !g.shots.length) return fail('There\'s no shot to flag right now.');
+      const last = g.shots[g.shots.length - 1];
+      if (last.flagged) return fail('That shot was already reviewed.');
+      last.flagged = true;
+      g.status = 'review';
+      g.review = { shotNo: last.no, side: last.side, accused: last.side, source: 'player', foul: { code: 'player-flag', text: q.name + ' flagged shot ' + last.no + ' by ' + last.shooter }, ball: last.firstContact, clip: last.clip, votes: { [side]: side === last.side ? 'dispute' : 'accept' }, at: now(), staff: false, ifFoul: otherSide(last.side), ifClean: g.turn, replay: { from: g.lastShot ? g.lastShot.from : g.positions, to: g.positions, cuePath: g.lastShot ? g.lastShot.cuePath : null, pockets: g.lastShot ? g.lastShot.pockets : {}, highlight: last.firstContact } };
+      g.turn = null;
+      log(S, now(), 'foul', q.name + ' flagged shot ' + last.no + ' on ' + t.name + ' for review');
+      textSeats(S, t, now(), notes, () => q.name + ' flagged shot ' + last.no + ' (' + last.shooter + ') as a foul. Play is paused until you both decide.', { subject: 'Foul review on ' + t.name + ', shot ' + last.no, buttons: [['Foul', 'vote', 'accept', 'foul'], ['No foul', 'vote', 'dispute']] });
+      break;
+    }
+    case 'vote': {
+      const t = tableOf(S, q), side = sideOf(t, q), g = t && t.game;
+      if (!g || g.status !== 'review' || !side) return fail('There\'s nothing to review.');
+      const v = p.vote === 'dispute' ? 'dispute' : 'accept';
+      g.review.votes[side] = v; log(S, now(), 'foul', q.name + (v === 'accept' ? ' accepted' : ' disputed') + ' the foul call');
+      settle(S, now(), notes);
+      break;
+    }
+    case 'staff': {
+      const t = S.tables.find(x => x.id === p.table), g = t && t.game;
+      if (!g || g.status !== 'review') return fail('No review waiting on that table.');
+      pushUndo(S, t);
+      resolveReview(S, t, p.decision === 'uphold' ? 'foul' : 'clean', now(), 'staff decision');
+      break;
+    }
+    case 'report': {
+      const t = tableOf(S, q), side = sideOf(t, q), g = t && t.game;
+      if (!g || g.mode !== 'manual' || !side) return fail('No game to report.');
+      g.winner = p.result === 'lost' ? otherSide(side) : side; g.status = 'confirm'; g.confirmAt = now(); g.confirm = { [side]: true };
+      g.winReason = 'reported by ' + q.name;
+      textSeats(S, t, now(), notes, s => q.name + ' reported that ' + (g.winner === s ? 'you won' : t[g.winner].name + ' won') + '. Confirm the result so it counts.', { subject: 'Confirm the result on ' + t.name, buttons: [['Confirm result', 'confirm']] });
+      settle(S, now(), notes);
+      break;
+    }
+    case 'confirm': {
+      const t = tableOf(S, q), side = sideOf(t, q), g = t && t.game;
+      if (!g || g.status !== 'confirm' || !side) return fail('Nothing to confirm.');
+      pushUndo(S, t);
+      g.confirm[side] = true;
+      settle(S, now(), notes);
+      break;
+    }
+    case 'advance': {
+      const m = Math.max(0, Math.min(120, Number(p.minutes) || 1));
+      S.skew = (S.skew || 0) + m * MIN; settle(S, now(), notes);
+      break;
+    }
+    case 'skip': {
+      for (let i = 0; i < 240; i++) {
+        const cur = p.ticket ? findTicket(S, p.ticket) : null;
+        if (!cur || cur.status !== 'waiting') break;
+        S.skew = (S.skew || 0) + 15000; settle(S, now(), notes);
+      }
+      break;
+    }
+    case 'reset': break;
+    default: {
+      if (!STAFF_ACTIONS.includes(action)) return fail('Unknown action: ' + action);
+      const t = S.tables.find(x => x.id === String(p.table || 'T1').toUpperCase());
+      if (!t) return fail('Unknown table.');
+      const g = t.game, live = g && g.mode === 'camera' && g.status === 'live';
+      if (action === 'undo') { if (!doUndo(S, t, now())) return fail('Nothing to undo on ' + t.name + '.'); break; }
+      if (action === 'start_match') {
+        const names = String(p.players || '').split(',').map(x => x.trim()).filter(Boolean);
+        if (names.length !== 2 || names[0].toLowerCase() === names[1].toLowerCase()) return fail('A match needs two different player names.');
+        if (g && g.status !== 'confirm' && String(p.force) !== '1') return fail('A game is being played on ' + t.name + '. Replace it?', 409);
+        pushUndo(S, t);
+        const n = String(p.gameType || p.game_type || '8').replace(/[^0-9]/g, '');
+        t.gameType = ['8', '9', '10'].includes(n) ? n + '-ball' : '8-ball';
+        [t.champ, t.challenger].forEach(sd => { const qq = sd && sd.ticket ? findTicket(S, sd.ticket) : null; if (qq && ['called', 'playing'].includes(qq.status)) qq.status = 'done'; });
+        const seatFor = (name, side) => {
+          const pid = findPid(S, name, true), qq = S.queue.find(x => x.pid === pid && ['waiting', 'called'].includes(x.status));
+          if (qq) { qq.status = 'playing'; qq.table = t.id; qq.seat = side; }
+          return { pid, name: S.players[pid].name, ticket: qq ? qq.ticket : null, real: !!qq, staff: !qq, present: true };
+        };
+        t.game = null; t.streak = 0; t.frameAt = null; t.practice = null;
+        t.challenger = seatFor(names[0], 'challenger'); t.champ = seatFor(names[1], 'champ'); t.breaker = 'challenger';   // the first name breaks
+        log(S, now(), 'table', 'Staff started ' + names[0] + ' vs ' + names[1] + ' (' + t.gameType + ') on ' + t.name);
+        startGame(S, t, now());
+        break;
+      }
+      if (action === 'next_match') { settle(S, now(), notes); if (!t.game && !(t.champ && t.challenger)) return fail('Nobody is waiting in the queue for ' + t.name + '.'); break; }
+      if (action === 'reset_table') {
+        pushUndo(S, t);
+        [t.champ, t.challenger].forEach(sd => { const qq = sd && sd.ticket ? findTicket(S, sd.ticket) : null; if (qq && ['called', 'playing'].includes(qq.status)) qq.status = 'done'; });
+        t.game = null; t.champ = null; t.challenger = null; t.streak = 0; t.frameAt = null; t.practice = null;
+        log(S, now(), 'table', 'Staff cleared ' + t.name);
+        settle(S, now(), notes);
+        break;
+      }
+      if (action === 'end_match') {
+        if (!g) return fail('No game being played on ' + t.name + '.');
+        const w = sideByName(t, p.winner); if (!w) return fail('Pick the winner: ' + [t.champ, t.challenger].filter(Boolean).map(x => x.name).join(' or ') + '.');
+        pushUndo(S, t);
+        finishGame(S, t, w, now(), notes, 'ended by staff');
+        settle(S, now(), notes);
+        break;
+      }
+      if (!live) return fail(!g ? 'No game is being played on ' + t.name + '.' : g.mode !== 'camera' ? (t.ref ? 'The camera is not following this game on ' + t.name : t.name + ' has no camera') + ', so staff can only declare the winner or clear the table.' : g.status === 'review' ? 'Play on ' + t.name + ' is paused for a foul review. Decide the review first.' : 'The game on ' + t.name + ' is over. The players are confirming the result.');
+      pushUndo(S, t);
+      if (action === 'switch_turn') { g.turn = otherSide(g.turn); g.ballInHand = false; g.lastReason = 'Turn switched by staff: ' + t[g.turn].name + ' to shoot'; log(S, now(), 'table', t.name + ' · ' + g.lastReason); }
+      else if (action === 'foul') { g.turn = otherSide(g.turn); g.ballInHand = true; g.lastReason = 'Foul called by staff: ball in hand for ' + t[g.turn].name; log(S, now(), 'foul', t.name + ' · ' + g.lastReason); }
+      else if (action === 'set_group') {
+        if ((g.gameType || t.gameType) !== '8-ball') { popUndo(S, t); return fail('Groups only exist in 8-ball.'); }
+        const sd = sideByName(t, p.player); if (!sd) { popUndo(S, t); return fail('Unknown player.'); }
+        const grp = p.group === 'stripes' ? 'stripes' : 'solids';
+        g.groups[sd] = grp; g.groups[otherSide(sd)] = grp === 'solids' ? 'stripes' : 'solids';
+        g.lastReason = t[sd].name + ' set to ' + grp + ' by staff'; log(S, now(), 'table', t.name + ' · ' + g.lastReason);
+      }
+      break;
+    }
+  }
+  const nFin = (S.finished || 0) - finBefore;
+  const finished = nFin > 0 ? S.history.slice(0, nFin) : null;
+  return { S, response: publicState(S, now(), p.ticket), notify: notes, finished };
+}
+
+// ===== Demo "camera service": builds the shot events a real vision system would send to n8n. =====
+// One scripted 8-ball game. Roles come from the engine's turn order, so the challenger plays the stripes here.
+const SHOT_SPEC = [
+  { brk: true, pot: [10] },
+  { target: 12, pot: true },
+  { target: 13, pot: false },
+  { target: 2, pot: true },
+  { target: 5, pot: true },
+  { target: 11, pot: false, conf: 0.62 },
+  { target: 9, pot: true, bih: true },
+  { target: 14, pot: true },
+  { target: 11, pot: true, extra: [15] },
+  { target: 13, pot: true, scratch: true },
+  { target: 1, pot: true, bih: true },
+  { target: 3, pot: true },
+  { target: 4, pot: false },
+  { target: 8, pot: true },
+];
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function buildScript() {
+  const R = TABLE.R, W = TABLE.W, H = TABLE.H, P = TABLE.pockets;
+  const rnd = mulberry32(20261118);
+  const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const round = p => [Math.round(p[0]), Math.round(p[1])];
+  let pos = rackPositions();
+  const free = (p, ignore) => p[0] > R + 6 && p[0] < W - R - 6 && p[1] > R + 6 && p[1] < H - R - 6 && P.every(q => d(p, q) > 48) && Object.entries(pos).every(([k, q]) => ignore.includes(k) || d(p, q) > 2 * R + 4);
+  const spot = (ignore, x0, x1, y0, y1) => { for (let i = 0; i < 800; i++) { const p = [x0 + rnd() * (x1 - x0), y0 + rnd() * (y1 - y0)]; if (free(p, ignore)) return round(p); } return [W / 2, H / 2]; };
+  const nearest = p => P.reduce((bi, q, i) => d(p, q) < d(p, P[bi]) ? i : bi, 0);
+  const events = [];
+  SHOT_SPEC.forEach((s, idx) => {
+    const ev = { shotNo: idx + 1, potted: [], cueBallPotted: false, firstContact: null, confidence: {}, cuePath: null, pockets: {}, clip: 'table1_shot' + String(idx + 1).padStart(2, '0') + '.mp4' };
+    if (s.brk) {
+      const apex = pos[1];
+      const contact = [apex[0] - 2 * R, apex[1]];
+      const next = { cue: null };
+      const old = pos; pos = { cue: old.cue };
+      for (let b = 1; b <= 15; b++) {
+        if (s.pot.includes(b)) continue;
+        const p = b <= 7 || b === 8 ? spot(['cue'], 380, 975, 25, 475) : spot(['cue'], 300, 975, 25, 475);
+        pos[b] = p; next[b] = p;
+      }
+      s.pot.forEach(b => { ev.pockets[b] = 2; });
+      const rest = spot([], 380, 520, 160, 340);
+      ev.cuePath = [old.cue, round(contact), rest];
+      pos.cue = rest;
+      ev.potted = s.pot.slice(); ev.firstContact = 1;
+    } else {
+      const tgt = pos[s.target];
+      const pk = nearest(tgt), pocket = P[pk];
+      const dist = d(tgt, pocket) || 1;
+      const dir = [(pocket[0] - tgt[0]) / dist, (pocket[1] - tgt[1]) / dist];
+      let start = pos.cue;
+      if (s.bih || !start) {
+        start = round([tgt[0] - dir[0] * 140, tgt[1] - dir[1] * 140]);
+        if (!free(start, ['cue'])) start = spot(['cue'], 60, 940, 40, 460);
+      }
+      const contact = round([tgt[0] - dir[0] * 2 * R, tgt[1] - dir[1] * 2 * R]);
+      ev.firstContact = s.target;
+      if (s.conf) ev.confidence.firstContact = s.conf;
+      if (s.pot) { delete pos[s.target]; ev.potted.push(s.target); ev.pockets[s.target] = pk; }
+      else {
+        const move = Math.min(dist - 50, 70 + rnd() * 60);
+        const np = round([tgt[0] + dir[0] * move, tgt[1] + dir[1] * move]);
+        pos[s.target] = free(np, [String(s.target)]) ? np : tgt;
+      }
+      (s.extra || []).forEach(b => { if (pos[b]) { ev.pockets[b] = nearest(pos[b]); delete pos[b]; ev.potted.push(b); } });
+      let rest;
+      if (s.scratch) {
+        const sp = P.map((q, i) => i).filter(i => i !== pk).sort((a, b) => d(contact, P[a]) - d(contact, P[b]))[0];
+        rest = P[sp]; ev.cueBallPotted = true; delete pos.cue;
+      } else {
+        rest = null;
+        for (let i = 0; i < 40 && !rest; i++) {
+          const ang = (rnd() < 0.5 ? -1 : 1) * (0.6 + rnd() * 0.7);
+          const len = 70 + rnd() * 160;
+          const c = Math.cos(ang), sn = Math.sin(ang);
+          const p = round([contact[0] + (dir[0] * c - dir[1] * sn) * len, contact[1] + (dir[0] * sn + dir[1] * c) * len]);
+          if (free(p, ['cue'])) rest = p;
+        }
+        if (!rest) rest = spot(['cue'], 60, 940, 40, 460);
+        pos.cue = rest;
+      }
+      ev.cuePath = [start, contact, round(rest)];
+    }
+    ev.positions = clone(pos);
+    events.push(ev);
+  });
+  return events;
+}
+
+// ===== Table camera screen =====
+// Port of loopool/tablecamera.html: same motion-detection state machine, same thresholds, same /pool-score wire format.
+// Changes from the original (deliberate): frames are FRAME_LONG_SIDE px (was 1568), MID_FRAMES mid frames are sent
+// (was 6), one JPEG quality for every frame, the "Table now" panel polls our own GET {base}/pool?action=state, and
+// the page chrome is restyled with the app's own tokens. No external libraries. localStorage is optional.
+//
+//   CameraView.mount(el, { base: 'https://x.app.n8n.cloud/webhook', table: 'T1' })  ->  { destroy() }
+(function () {
+  'use strict';
+
+  // ---- constants (detection ones are his, verbatim) ----
+  const TICK_MS = 125;            // detection tick
+  const SMALL_W = 240;            // width of the grayscale frame used for motion
+  const CALIB_MS = 2500;          // calibration window
+  const STILL_MS = 1500, MOVED_MIN = 0.0005, MAX_SHOT_MS = 30000;
+  const MID_EVERY_MS = 350;       // mid-shot frame grab interval
+  const FRAME_LONG_SIDE = 1024;   // long side of every frame sent to the AI (his page: 1568)
+  const MID_FRAMES = 4;           // mid frames sent per shot (his page: 6)
+  const JPEG_QUALITY = 0.82;
+  const POLL_MS = 3000;
+
+  const CSS = `
+.cam-view{--c-board:var(--board,#1c2723);--c-board2:var(--board-2,#233029);--c-board3:var(--board-3,#2a3832);--c-tv:var(--tv,#121a17);
+  --c-line:var(--line,#33413b);--c-line2:var(--line-2,#3a4842);--c-line3:var(--line-3,#5b6a63);--c-chalk:var(--chalk,#ecefe9);--c-dim:var(--dim,#a4afa8);--c-faint:var(--faint,#8e9b94);
+  --c-brass:var(--brass,#e5ad3e);--c-blue:var(--blue,#5b9be8);--c-blueink:var(--blue-ink,#0e1714);--c-bluetext:var(--blue-text,#8fbcf2);--c-foul:var(--foul,#ff7a6b);--c-good:var(--good,#67d394);
+  --c-sign:var(--f-sign,"Big Shoulders","Arial Narrow",sans-serif);--c-body:var(--f-body,system-ui,-apple-system,"Segoe UI",sans-serif);--c-mono:var(--f-mono,ui-monospace,Menlo,monospace);
+  color:var(--c-chalk);font:15px/1.45 var(--c-body);display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,1fr);gap:24px;align-items:start}
+.cam-view *{box-sizing:border-box}
+.cam-view .cam-col{display:grid;gap:18px;min-width:0}
+.cam-view .cam-label{font:500 11px/1.3 var(--c-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c-dim)}
+.cam-view .cam-sign{font-family:var(--c-sign);font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:.95}
+.cam-view .cam-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:36px}
+.cam-view .cam-head h2{margin:0;font-size:30px}
+.cam-view .cam-pill{display:inline-flex;align-items:center;gap:8px;min-height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--c-line2);font:500 12px var(--c-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--c-dim)}
+.cam-view .cam-pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c-faint)}
+.cam-view .cam-pill.watching{color:var(--c-good)}.cam-view .cam-pill.watching::before{background:var(--c-good)}
+.cam-view .cam-pill.motion{color:var(--c-brass);border-color:var(--c-brass)}.cam-view .cam-pill.motion::before{background:var(--c-brass)}
+.cam-view .cam-pill.paused{color:var(--c-foul)}.cam-view .cam-pill.paused::before{background:var(--c-foul)}
+.cam-view .cam-pill.calibrating{color:var(--c-bluetext)}.cam-view .cam-pill.calibrating::before{background:var(--c-blue)}
+.cam-view .cam-meter{font:400 12px var(--c-mono);color:var(--c-faint)}
+.cam-view .cam-top{grid-column:1/-1;display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;min-height:36px}
+.cam-view .cam-top h2{margin:0;font-size:30px}
+.cam-view .cam-brand{margin-left:auto;display:flex;align-items:center;gap:16px}
+.cam-view .cam-brand a{color:var(--c-bluetext);font-size:14px;font-weight:500;text-decoration:none;min-height:36px;display:inline-flex;align-items:center}
+.cam-view .cam-brand span{display:inline-flex;align-items:center;gap:10px;font:800 22px/1 var(--c-sign);letter-spacing:.06em}
+.cam-view .cam-stage{position:relative;background:#050807;border:1px solid var(--c-line);border-radius:10px;overflow:hidden;aspect-ratio:16/9}
+.cam-view .cam-stage.live{aspect-ratio:auto}
+.cam-view video{display:block;width:100%;height:auto;background:#000}
+.cam-view .cam-stage:not(.live) video{position:absolute;inset:0;height:100%;opacity:0}
+.cam-view canvas.cam-ov{position:absolute;inset:0;width:100%;height:100%}
+.cam-view .cam-empty{position:absolute;inset:0;display:grid;place-content:center;gap:8px;text-align:center;padding:20px;color:var(--c-dim)}
+.cam-view .cam-empty b{font:800 28px/1 var(--c-sign);letter-spacing:.05em;text-transform:uppercase;color:var(--c-chalk)}
+.cam-view .cam-stage.live .cam-empty{display:none}
+.cam-view .cam-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cam-view .cam-b{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:6px;border:1px solid var(--c-line2);background:transparent;color:var(--c-chalk);font:600 13.5px var(--c-body);cursor:pointer}
+.cam-view .cam-b:hover:not(:disabled){border-color:var(--c-line3)}
+.cam-view .cam-b:disabled{opacity:.4;cursor:not-allowed}
+.cam-view .cam-b.go{background:var(--c-blue);border-color:var(--c-blue);color:var(--c-blueink)}
+.cam-view .cam-b.on{border-color:var(--c-brass);color:var(--c-brass)}
+.cam-view .cam-sens{display:flex;align-items:center;gap:10px;margin-left:auto;font:500 11px var(--c-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c-dim)}
+.cam-view .cam-sens input{width:130px;accent-color:var(--c-blue)}
+.cam-view .cam-hint{font-size:13px;color:var(--c-dim);min-height:1.45em}
+.cam-view .cam-hint.err,.cam-view .cam-err{color:var(--c-foul)}
+.cam-view .cam-card{background:var(--c-board2);border:1px solid var(--c-line);border-radius:10px;padding:16px;display:grid;gap:12px}
+.cam-view .cam-card h3{margin:0;font-size:22px}
+.cam-view .cam-field{display:grid;gap:6px}
+.cam-view select,.cam-view input[type=file]{width:100%;min-height:42px;padding:8px 12px;border-radius:8px;border:1px solid var(--c-line2);background:var(--c-board);color:var(--c-chalk);font:14px var(--c-body)}
+.cam-view input[type=file]{padding:5px 12px 5px 5px;color:var(--c-dim)}
+.cam-view input[type=file]::file-selector-button{margin-right:12px;min-height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--c-line3);background:transparent;color:var(--c-chalk);font:600 13.5px var(--c-body);cursor:pointer}
+.cam-view .cam-conn{font:400 12px/1.5 var(--c-mono);color:var(--c-dim);overflow-wrap:anywhere}
+.cam-view .cam-now-game{font:500 12px var(--c-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--c-dim)}
+.cam-view .cam-turn{font:800 38px/1 var(--c-sign);letter-spacing:.03em;text-transform:uppercase}
+.cam-view .cam-turn small{font:500 12px var(--c-mono);letter-spacing:.1em;color:var(--c-brass);margin-left:8px}
+.cam-view .cam-players{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cam-view .cam-pc{border:1px solid var(--c-line2);border-radius:8px;padding:10px 12px;display:grid;gap:2px;min-width:0}
+.cam-view .cam-pc.on{border-color:var(--c-good)}
+.cam-view .cam-pc b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cam-view .cam-pc span{font:400 12px var(--c-mono);color:var(--c-dim)}
+.cam-view .cam-log{display:flex;flex-direction:column;max-height:560px;overflow-y:auto}
+.cam-view .cam-item{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px solid var(--c-line);font-size:14px}
+.cam-view .cam-item:last-child{border-bottom:0}
+.cam-view .cam-ring{--p:0;--c:var(--c-line3);width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--c-line) 0);position:relative;font:800 20px/1 var(--c-sign);color:var(--c)}
+.cam-view .cam-ring::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--c-board2)}
+.cam-view .cam-ring span{position:relative}
+.cam-view .cam-item .t{font:400 11.5px var(--c-mono);color:var(--c-faint);letter-spacing:.04em}
+.cam-view .cam-item .who{font-weight:600}
+.cam-view .cam-item .foul,.cam-view .cam-item .errtxt{color:var(--c-foul)}
+.cam-view .cam-item .next{color:var(--c-good)}
+.cam-view .cam-item .check{color:var(--c-brass)}
+.cam-view .cam-item .mut{color:var(--c-dim)}
+.cam-view .cam-item .tip{color:var(--c-bluetext)}
+.cam-view .cam-none{color:var(--c-dim);font-size:14px}
+@media (max-width:900px){.cam-view{grid-template-columns:minmax(0,1fr);gap:18px}.cam-view .cam-sens{margin-left:0}.cam-view .cam-top h2{font-size:26px}.cam-view .cam-turn{font-size:32px}}
+`;
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('poolcam.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('poolcam.' + k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } },
+  };
+
+  function mount(el, opts) {
+    opts = opts || {};
+    const tableId = () => String(opts.table || 'T1').trim().toUpperCase();
+    const base = () => String(opts.base || '').trim().replace(/\/+$/, '').replace(/\/(pool-[a-z]+)$/, '');
+
+    if (!document.getElementById('cam-view-style')) {
+      const st = document.createElement('style'); st.id = 'cam-view-style'; st.textContent = CSS; document.head.appendChild(st);
+    }
+    el.innerHTML = `
+<div class="cam-view">
+  <div class="cam-top"><h2 class="cam-sign">Table camera</h2><span class="cam-pill" data-r="pill" role="status">Stopped</span><span class="cam-meter" data-r="meter"></span>
+    <div class="cam-brand"><a href="#presenter">All screens</a><span><svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg>LOOPOOL</span></div></div>
+  <section class="cam-col">
+    <div class="cam-stage" data-r="stage">
+      <video data-r="v" playsinline muted></video>
+      <canvas class="cam-ov" data-r="ov"></canvas>
+      <div class="cam-empty"><b>No picture yet</b><span>Choose a source, then press Start.</span></div>
+    </div>
+    <div class="cam-btns">
+      <button class="cam-b" data-r="cropBtn" title="Mark where the table is in the picture, so nothing outside it counts as a shot">Mark the table</button>
+      <button class="cam-b" data-r="cropClear" title="Forget the marked table and watch the whole picture">Watch whole picture</button>
+      <button class="cam-b" data-r="pauseBtn" disabled title="Stop counting shots for a while, for example while the balls are being set up">Pause</button>
+      <button class="cam-b" data-r="manualBtn" disabled title="If the camera missed a shot, send the table as it is now to the referee">Send a missed shot</button>
+      <label class="cam-sens" title="Higher picks up softer shots. Lower ignores small movement.">Sensitivity <input type="range" data-r="sens" min="0.4" max="3" step="0.1" value="1"></label>
+    </div>
+    <div class="cam-hint" data-r="hint">Put the camera above the table, press Start, then press "Mark the table". Keep the table still for 3 seconds while the camera gets ready.</div>
+  </section>
+  <section class="cam-col">
+    <div class="cam-card">
+      <h3 class="cam-sign">Setup</h3>
+      <div class="cam-conn" data-r="conn"></div>
+      <div class="cam-field"><span class="cam-label">Picture from</span>
+        <select data-r="src" aria-label="Picture from"><option value="camera">This device's camera</option><option value="file">A recorded video (for demos)</option></select></div>
+      <div class="cam-field" data-r="camRow"><span class="cam-label">Which camera</span>
+        <select data-r="dev" aria-label="Which camera"><option value="">Back camera (usual choice)</option></select></div>
+      <div class="cam-field" data-r="fileRow" style="display:none"><span class="cam-label">Video file</span>
+        <input type="file" data-r="file" accept="video/*" aria-label="Video file"></div>
+      <div class="cam-field"><span class="cam-label">Ball colours</span>
+        <select data-r="balls" aria-label="Ball colours" title="The AI names balls by colour. Telling it this table's set makes it name the right ball far more often."><option value="standard">Usual colours (4 purple, 5 orange, 7 maroon)</option><option value="pink">4 pink, 5 purple, 7 orange</option></select></div>
+      <div class="cam-btns"><button class="cam-b go" data-r="startBtn">Start</button><button class="cam-b" data-r="stopBtn" disabled>Stop</button></div>
+      <div class="cam-hint err" data-r="setupErr"></div>
+    </div>
+    <div class="cam-card">
+      <h3 class="cam-sign">Table now</h3>
+      <div data-r="now" class="cam-none">Checking the table…</div>
+    </div>
+    <div class="cam-card">
+      <h3 class="cam-sign">Shots</h3>
+      <div class="cam-log" data-r="log"><div class="cam-none" data-r="nolog">No shots yet. Each shot the camera sees is listed here with its score.</div></div>
+    </div>
+  </section>
+</div>`;
+    const root = el.querySelector('.cam-view');
+    const R = {}; root.querySelectorAll('[data-r]').forEach(n => { R[n.dataset.r] = n; });
+    const v = R.v, ov = R.ov, octx = ov.getContext('2d');
+    const cs = getComputedStyle(root);
+    const tok = (n, d) => (cs.getPropertyValue(n).trim() || d);
+    const COL = { good: tok('--c-good', '#67d394'), brass: tok('--c-brass', '#e5ad3e'), foul: tok('--c-foul', '#ff7a6b'), lime: '#b6e36b' };
+    const fontSans = tok('--c-body', 'sans-serif');
+
+    // ---------------- settings (remembered when storage works) ----------------
+    const tableName = () => tableId().replace(/^T(\d+)$/, 'Table $1');
+    const NO_VENUE = 'Shot seen, but not scored: this demo page is not connected to a venue.';
+    R.conn.textContent = base() ? `${tableName()} · shots go to ${base().replace(/^https?:\/\//, '').replace(/\/webhook.*$/, '')}` : `${tableName()} · demo page. It sees shots but cannot score them. To score, open the camera from the venue's own link (it ends in /pool-app#camera).`;
+    if (!base()) { R.now.textContent = 'A demo page has no live game to show.'; }
+    R.src.value = store.get('src', 'camera') === 'file' ? 'file' : 'camera';
+    R.sens.value = String(store.get('sens', 1));
+    let wantDev = store.get('dev', '');
+    const syncSrc = () => { R.camRow.style.display = R.src.value === 'camera' ? '' : 'none'; R.fileRow.style.display = R.src.value === 'file' ? '' : 'none'; };
+    syncSrc();
+    R.src.onchange = () => { store.set('src', R.src.value); syncSrc(); };
+    R.balls.value = store.get('balls', 'standard') === 'pink' ? 'pink' : 'standard';
+    R.balls.onchange = () => store.set('balls', R.balls.value);
+    R.dev.onchange = () => { wantDev = R.dev.value; store.set('dev', wantDev); };
+
+    // ---------------- video + geometry ----------------
+    let crop = store.get('crop', null);
+    function srcRect() { const vw = v.videoWidth, vh = v.videoHeight, r = crop || { x: 0, y: 0, w: 1, h: 1 }; return [r.x * vw, r.y * vh, r.w * vw, r.h * vh]; }
+    const sc = document.createElement('canvas'), sctx = sc.getContext('2d', { willReadFrequently: true });
+    function smallGray() {
+      const [sx, sy, sw, sh] = srcRect(); const w = SMALL_W, h = Math.max(1, Math.round(SMALL_W * sh / sw));
+      if (sc.width !== w || sc.height !== h) { sc.width = w; sc.height = h; }
+      sctx.drawImage(v, sx, sy, sw, sh, 0, 0, w, h);
+      const d = sctx.getImageData(0, 0, w, h).data, g = new Uint8Array(w * h);
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) g[j] = (d[i] * 3 + d[i + 1] * 6 + d[i + 2]) / 10;
+      return g;
+    }
+    function diffFrac(a, b, th) { if (!a || !b || a.length !== b.length) return 0; let c = 0; for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > th) c++; return c / a.length; }
+    function captureFull() {
+      const [sx, sy, sw, sh] = srcRect(), s = FRAME_LONG_SIDE / Math.max(sw, sh), c = document.createElement('canvas');
+      c.width = Math.round(sw * s); c.height = Math.round(sh * s);
+      const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height); return c;
+    }
+    const toBlob = (c, q) => new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('frame')), 'image/jpeg', q == null ? JPEG_QUALITY : q));
+    function diffCanvas(a, b) {
+      const c = document.createElement('canvas'); c.width = a.width; c.height = a.height;
+      const A = a.getContext('2d').getImageData(0, 0, a.width, a.height).data, B = b.getContext('2d').getImageData(0, 0, b.width, b.height).data;
+      const g = c.getContext('2d'), out = g.createImageData(a.width, a.height);
+      for (let i = 0; i < A.length; i += 4) { const d = Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]); const x = d > 90 ? 255 : 0; out.data[i] = out.data[i + 1] = out.data[i + 2] = x; out.data[i + 3] = 255; }
+      g.putImageData(out, 0, 0); return c;
+    }
+
+    // ---------------- detection state machine ----------------
+    let running = false, paused = false, timer = null, state = 'stopped';
+    let prev = null, onCount = 0, quietSince = null, motionStart = 0, stillSince = null, lastMid = 0, mids = [];
+    let still = null;                       // { canvas, small, at } = last calm table image (the "before" frame)
+    let before = null, calib = null, ON = 0.004, OFF = 0.0008, lastM = 0, lastFrameT = -1;
+
+    const PILL = { stopped: 'Stopped', calibrating: 'Getting ready…', idle: 'Watching', motion: 'Shot in progress', paused: 'Paused' };
+    function setState(s) { state = s; R.pill.textContent = PILL[s] || s; R.pill.className = 'cam-pill ' + ({ idle: 'watching', motion: 'motion', paused: 'paused', calibrating: 'calibrating' }[s] || ''); }
+    function resetRef() { prev = null; still = null; onCount = 0; quietSince = null; if (running && !paused) startCalibration(); }
+    function startCalibration() { calib = { start: performance.now(), samples: [] }; setState('calibrating'); }
+
+    function tick() {
+      if (!running || v.readyState < 2 || !v.videoWidth) return;
+      if (v.srcObject == null && v.currentTime === lastFrameT && !v.paused) return;   // file replay: wait for a new frame
+      lastFrameT = v.currentTime;
+      const t = performance.now(), g = smallGray();
+      const m = diffFrac(g, prev, 18); prev = g; lastM = m;
+      if (calib) {
+        calib.samples.push(m);
+        if (t - calib.start > CALIB_MS) {
+          const s = calib.samples.slice(2).sort((a, b) => a - b), p95 = s[Math.floor(s.length * 0.95)] || 0, sens = +R.sens.value;
+          OFF = Math.max(0.0002, p95 * 2) / sens; ON = Math.max(0.0005, p95 * 6) / sens;   // low floor: a single rolling ball must trigger
+          calib = null; still = { canvas: captureFull(), small: g, at: t }; setState('idle');
+          R.hint.className = 'cam-hint';
+          R.hint.textContent = 'Ready. Watching the table for shots.';
+          R.hint.title = `Background movement ${(p95 * 100).toFixed(3)}% · a shot starts above ${(ON * 100).toFixed(2)}% · ends below ${(OFF * 100).toFixed(2)}%`;
+        }
+        draw(m); return;
+      }
+      if (paused) { draw(m); return; }
+      if (state === 'idle') {
+        if (m > ON) {
+          if (++onCount >= 2) { setState('motion'); motionStart = t; stillSince = null; mids = []; lastMid = 0; before = still; }
+        } else {
+          onCount = 0;
+          if (m < OFF) { quietSince = quietSince || t; if (t - quietSince > 800 && (!still || t - still.at > 1500)) still = { canvas: captureFull(), small: g, at: t }; }
+          else quietSince = null;
+        }
+      } else if (state === 'motion') {
+        if (t - lastMid > MID_EVERY_MS) {
+          lastMid = t; const rel = (t - motionStart) / 1000;
+          toBlob(captureFull()).then(b => { mids.push({ t: rel, blob: b }); if (mids.length > 40) mids.splice(1, 1); }).catch(() => {});
+        }
+        if (m < OFF) { stillSince = stillSince || t; if (t - stillSince > STILL_MS) finishShot(g, t); }
+        else stillSince = null;
+        if (t - motionStart > MAX_SHOT_MS) finishShot(g, t);
+      }
+      draw(m);
+    }
+    function finishShot(g, t) {
+      const b = before, after = captureFull(), dur = (t - motionStart) / 1000, myMids = mids.slice();
+      setState('idle'); onCount = 0; quietSince = t; still = { canvas: after, small: g, at: t };
+      if (!b) { addLog({ status: 'ignored', text: 'Something moved before the camera was ready. Not counted.' }); return; }
+      const moved = diffFrac(b.small, g, 40);
+      if (moved < MOVED_MIN) { addLog({ status: 'ignored', text: 'Something moved, but no ball changed place. Not counted.' }); return; }
+      enqueue({ before: b.canvas, after, mids: myMids, dur, moved });
+    }
+    function scoreNow() {
+      if (!still) { R.setupErr.textContent = 'Wait until the camera says "Watching", then try again.'; return; }
+      R.setupErr.textContent = '';
+      enqueue({ before: still.canvas, after: captureFull(), mids: [], dur: 0, moved: null, manual: true });
+    }
+
+    // ---------------- sending ----------------
+    const queue = []; let busy = false, seq = 0, destroyed = false;
+    function enqueue(p) { p.id = ++seq; p.li = addLog({ status: 'queued', text: p.manual ? 'Shot sent by hand. Waiting its turn…' : `Shot seen (${p.dur.toFixed(1)} s). Waiting its turn…` }); queue.push(p); pump(); }
+    function sample(arr, n) { if (arr.length <= n) return arr; const out = []; for (let i = 0; i < n; i++) out.push(arr[Math.round(i * (arr.length - 1) / (n - 1))]); return out; }
+    async function pump() {
+      if (busy || !queue.length) return;
+      busy = true; const p = queue.shift(); const t0 = Date.now();
+      updateLog(p.li, { status: 'sending', text: 'The AI referee is looking at the photos…' });
+      try {
+        if (!base()) throw new Error(NO_VENUE);
+        const fd = new FormData();
+        fd.append('table', tableId());
+        fd.append('ball_set', R.balls.value);
+        fd.append('frame_start', await toBlob(p.before), '0.00.jpg');
+        sample(p.mids, MID_FRAMES).forEach((m, i) => fd.append('frame_mid_' + (i + 1), m.blob, m.t.toFixed(2) + '.jpg'));
+        fd.append('frame_end', await toBlob(p.after), Math.max(0.01, p.dur).toFixed(2) + '.jpg');
+        fd.append('frame_diff', await toBlob(diffCanvas(p.before, p.after)), 'diff.jpg');
+        const res = await fetch(base() + '/pool-score', { method: 'POST', body: fd });
+        const raw = await res.text(); let d;
+        try { d = JSON.parse(raw); } catch (e) { throw new Error(`Not scored: the venue's server gave an answer the camera could not read (code ${res.status}). Try the next shot; if it keeps happening, tell whoever runs the n8n workflow.`); }
+        if (!d.ok) throw new Error('Not scored: ' + (d.error || d.message || 'the AI referee could not read this shot.') + (d.raw ? ' · AI said: ' + String(d.raw).slice(0, 160) : ''));
+        updateLog(p.li, { status: 'done', data: d, secs: Math.round((Date.now() - t0) / 1000) });
+        pollState();
+      } catch (e) {
+        updateLog(p.li, { status: 'error', text: /fetch|load failed|network/i.test(e.message) ? 'Not scored: the venue\'s server did not answer. Check the internet connection and that the n8n workflow is switched on.' : e.message });
+      } finally { busy = false; pump(); }
+    }
+
+    // ---------------- UI: shot log ----------------
+    const ringColor = s => s >= 85 ? COL.good : s >= 70 ? COL.lime : s >= 50 ? COL.brass : COL.foul;
+    function addLog(o) {
+      if (R.nolog && R.nolog.parentNode) R.nolog.remove();
+      const li = document.createElement('div'); li.className = 'cam-item'; R.log.prepend(li); updateLog(li, o); return li;
+    }
+    function updateLog(li, o) {
+      const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+      if (o.status === 'done') {
+        const d = o.data, g = d.game || {}, sc = Math.max(0, Math.min(100, Math.round(+d.score || 0)));
+        const player = d.player || g.shooter || '';
+        li.innerHTML = `<div class="cam-ring" style="--p:${sc};--c:${ringColor(sc)}"><span>${sc}</span></div>
+      <div><div><span class="who">${esc(player || 'Shot')}</span> · ${esc(d.grade || '')} <span class="t">· ${esc(time)} · ${o.secs}s</span></div>
+      ${d.foul_reason ? `<div class="foul">Foul: ${esc(d.foul_reason)}</div>` : ''}
+      ${g.reason ? `<div>${esc(g.reason)}</div>` : (d.skipped ? '<div>Not counted</div>' : '')}
+      ${g.finished ? `<div class="next">${esc(g.winner)} wins the game</div>` : (g.turn_after ? `<div class="next">Next shooter: ${esc(g.turn_after)}${g.ball_in_hand ? ' (ball in hand)' : ''}</div>` : '')}
+      ${d.needs_review ? '<div class="check">The AI is not sure about this one. Please check it.</div>' : ''}
+      ${d.apply_error ? `<div class="errtxt">Scored, but the game was not updated: ${esc(d.apply_error)}</div>` : ''}
+      ${d.tip ? `<div class="tip">Tip: ${esc(d.tip)}</div>` : ''}
+      ${d.observations ? `<div class="mut">${esc(d.observations)}</div>` : ''}</div>`;
+      } else {
+        const icon = { queued: '…', sending: 'AI', ignored: '·', error: '!' }[o.status] || '';
+        const cls = o.status === 'error' ? 'errtxt' : o.status === 'ignored' ? 'mut' : '';
+        li.innerHTML = `<div class="cam-ring" style="--p:${o.status === 'error' ? 100 : 0};--c:${o.status === 'error' ? COL.foul : 'var(--c-line3)'}"><span style="font-size:16px">${icon}</span></div>
+      <div class="${cls}">${esc(o.text)}<div class="t">${esc(time)}</div></div>`;
+      }
+    }
+
+    // ---------------- UI: "Table now" (our GET {base}/pool?action=state) ----------------
+    const GROUP_BALLS = { solids: [1, 2, 3, 4, 5, 6, 7], stripes: [9, 10, 11, 12, 13, 14, 15] };
+    function renderNow(j) {
+      const t = (j.tables || []).find(x => x.id === tableId());
+      if (!t) { R.now.className = 'cam-none'; R.now.textContent = `${tableName()} is not set up at this venue.`; return; }
+      const g = t.game;
+      if (!g) { R.now.className = 'cam-none'; R.now.textContent = 'No game on this table right now. Staff can start one on the counter tablet.'; return; }
+      R.now.className = '';
+      const seat = s => (t[s] && t[s].name) || (s === 'champ' ? 'Player 1' : 'Player 2');
+      const left = s => {
+        const grp = g.groups && g.groups[s];
+        if (t.gameType === '8-ball' || grp) {
+          if (!grp) return 'open table';
+          const n = (g.onTable || []).filter(b => (GROUP_BALLS[grp] || []).includes(b)).length;
+          return `${grp} · ${n} left`;
+        }
+        return '';
+      };
+      const players = ['champ', 'challenger'].map(s => `<div class="cam-pc ${g.turn === s ? 'on' : ''}"><b>${esc(seat(s))}</b><span>${esc(left(s) || (t[s] && t[s].rating ? 'rating ' + t[s].rating : ''))}</span></div>`).join('');
+      const shots = (g.shots || []).length ? g.shots[g.shots.length - 1].no : 0;
+      const head = `<div class="cam-now-game">${esc(t.gameType || '')}${shots ? ' · shot ' + shots : ''}</div>`;
+      let body;
+      if (g.status === 'confirm' || g.winner) {
+        body = `<div class="cam-turn">${esc(seat(g.winner))} won</div><div class="cam-none">${esc(g.winReason || '')}${g.status === 'confirm' ? ' · Waiting for both players to confirm.' : ''}</div>`;
+      } else if (g.turn) {
+        body = `<div class="cam-turn">${esc(seat(g.turn))} to shoot${g.ballInHand ? '<small>BALL IN HAND</small>' : ''}</div>${g.status === 'review' || g.status === 'staff' ? '<div class="cam-none">A foul call is being reviewed.</div>' : ''}`;
+      } else {
+        body = `<div class="cam-none">Game running. No shots recorded yet.</div>`;
+      }
+      R.now.innerHTML = `${head}${body}<div class="cam-players" style="margin-top:12px">${players}</div>`;
+    }
+    let pollBusy = false;
+    async function pollState() {
+      if (destroyed || !base() || pollBusy) return;
+      pollBusy = true;
+      try {
+        const r = await fetch(`${base()}/pool?action=state`, { cache: 'no-store' }); const d = await r.json();
+        if (d && d.ok !== false && d.tables) renderNow(d);
+      } catch (e) { /* keep the last picture of the table */ }
+      pollBusy = false;
+    }
+    const pollTimer = setInterval(pollState, POLL_MS);
+
+    // ---------------- overlay ----------------
+    let cropMode = false, pts = [];
+    function draw(m) {
+      const r = ov.getBoundingClientRect(); if (ov.width !== Math.round(r.width) || ov.height !== Math.round(r.height)) { ov.width = Math.round(r.width); ov.height = Math.round(r.height); }
+      const W = ov.width, H = ov.height; octx.clearRect(0, 0, W, H);
+      if (crop) {
+        octx.fillStyle = 'rgba(0,0,0,.45)'; const x = crop.x * W, y = crop.y * H, w = crop.w * W, h = crop.h * H;
+        octx.fillRect(0, 0, W, y); octx.fillRect(0, y + h, W, H - y - h); octx.fillRect(0, y, x, h); octx.fillRect(x + w, y, W - x - w, h);
+        octx.strokeStyle = state === 'motion' ? COL.brass : COL.good; octx.lineWidth = 2; octx.strokeRect(x, y, w, h);
+      }
+      pts.forEach(p => { octx.fillStyle = COL.good; octx.beginPath(); octx.arc(p.x * W, p.y * H, 6, 0, 7); octx.fill(); });
+      if (m !== undefined && running) {
+        const bw = Math.min(260, W - 24), lvl = Math.min(1, m / (ON * 2.5));
+        octx.fillStyle = 'rgba(0,0,0,.6)'; octx.fillRect(12, H - 30, bw, 14);
+        octx.fillStyle = m > ON ? COL.brass : COL.good; octx.fillRect(12, H - 30, bw * lvl, 14);
+        octx.fillStyle = '#fff'; octx.fillRect(12 + bw * (1 / 2.5), H - 33, 2, 20);
+        R.meter.textContent = `movement ${(m * 100).toFixed(2)}%`;
+      }
+      if (cropMode) { octx.fillStyle = 'rgba(0,0,0,.6)'; octx.fillRect(0, 0, W, 34); octx.fillStyle = '#fff'; octx.font = '14px ' + fontSans; octx.fillText(pts.length ? 'Now tap the bottom-right corner of the table' : 'Tap the top-left corner of the table (outside the pockets)', 12, 22); }
+    }
+    ov.onclick = e => {
+      if (!cropMode) return;
+      const r = ov.getBoundingClientRect(); pts.push({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
+      if (pts.length === 2) {
+        const [a, b] = pts; const c = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
+        crop = c.w > 0.1 && c.h > 0.1 ? c : null; store.set('crop', crop); cropMode = false; pts = []; R.cropBtn.classList.remove('on'); resetRef();
+      }
+      draw();
+    };
+    R.cropBtn.onclick = () => { if (!v.videoWidth) { R.setupErr.textContent = 'Press Start first, so there is a picture to mark the table on.'; return; } R.setupErr.textContent = ''; cropMode = true; pts = []; R.cropBtn.classList.add('on'); draw(); };
+    R.cropClear.onclick = () => { crop = null; store.set('crop', null); resetRef(); draw(); };
+    R.sens.oninput = () => { store.set('sens', +R.sens.value); resetRef(); };
+    const onResize = () => draw();
+    window.addEventListener('resize', onResize);
+
+    // ---------------- start / stop ----------------
+    async function listDevices() {
+      try {
+        const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput'), cur = R.dev.value || wantDev;
+        R.dev.innerHTML = '<option value="">Back camera (usual choice)</option>' + devs.map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || 'Camera ' + (i + 1))}</option>`).join('');
+        R.dev.value = cur; if (R.dev.value !== cur) R.dev.value = '';
+      } catch (e) { /* no device list */ }
+    }
+    function stopAll() {
+      running = false; clearInterval(timer); setState('stopped');
+      if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
+      v.pause(); R.startBtn.disabled = false; R.stopBtn.disabled = true; R.pauseBtn.disabled = true; R.manualBtn.disabled = true;
+    }
+    async function start() {
+      R.setupErr.textContent = '';
+      stopAll();
+      try {
+        if (R.src.value === 'camera') {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('This browser will not share the camera with this page. Open the page from an https:// link, or pick "A recorded video" above.');
+          const id = R.dev.value;
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: id ? { deviceId: { exact: id }, width: { ideal: 1920 }, height: { ideal: 1080 } } : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } });
+          v.srcObject = stream; await v.play(); listDevices();
+        } else {
+          const f = R.file.files[0]; if (!f) throw new Error('Choose a video file first.');
+          v.removeAttribute('srcObject'); v.srcObject = null; v.src = URL.createObjectURL(f); v.loop = false; await v.play();
+        }
+      } catch (e) {
+        const what = e.name + ' ' + e.message, fromCam = R.src.value === 'camera';
+        R.setupErr.textContent = /Choose a video|will not share/.test(e.message) ? e.message
+          : fromCam && /NotAllowed|Permission|denied/i.test(what) ? 'The camera is blocked for this page. Allow it in the browser\'s address bar, then press Start again.'
+          : fromCam ? 'No camera could be started on this device. Check one is plugged in and not used by another app, or pick "A recorded video" above.'
+          : 'This browser cannot play that video. Try an MP4 or WebM file.';
+        return;
+      }
+      R.stage.classList.add('live');
+      running = true; paused = false; prev = null; still = null; lastFrameT = -1;
+      startCalibration(); timer = setInterval(tick, TICK_MS);
+      R.startBtn.disabled = true; R.stopBtn.disabled = false; R.pauseBtn.disabled = false; R.manualBtn.disabled = false; R.pauseBtn.textContent = 'Pause';
+      pollState();
+    }
+    v.onended = () => { setTimeout(() => { if (running && state !== 'motion') { addLog({ status: 'ignored', text: 'The video has finished. Press Start to play it again.' }); stopAll(); } }, STILL_MS + 1200); };
+    R.startBtn.onclick = start;
+    R.stopBtn.onclick = stopAll;
+    R.pauseBtn.onclick = () => { paused = !paused; R.pauseBtn.textContent = paused ? 'Resume' : 'Pause'; if (paused) setState('paused'); else resetRef(); };
+    R.manualBtn.onclick = scoreNow;
+    if (store.get('src', 'camera') === 'camera') listDevices();
+    setState('stopped');
+    draw();
+    pollState();
+
+    return {
+      destroy() { destroyed = true; stopAll(); clearInterval(pollTimer); window.removeEventListener('resize', onResize); el.innerHTML = ''; },
+    };
+  }
+
+  window.CameraView = { mount };
+})();
+
+// ===== Page logic =====
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('loopool.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('loopool.' + k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } },
+};
+// n8n can serve the page in a sandbox (n8n Cloud always does), where localStorage is blocked.
+// Then the ticket rides in the link instead (#phone&t=A102), so a reload keeps your place in the queue.
+const canStore = (() => { try { localStorage.setItem('loopool.t', '1'); localStorage.removeItem('loopool.t'); return true; } catch (e) { return false; } })();
+const hashParts = () => { const [view, t] = location.hash.replace(/^#/, '').split('&t='); return { view, ticket: t ? decodeURIComponent(t) : null }; };
+function loadTicket() { return canStore ? store.get('ticket', null) : hashParts().ticket; }
+function saveTicket(t) {
+  if (canStore) { store.set('ticket', t); return; }
+  const h = '#' + (hashParts().view || S.view) + (t ? '&t=' + encodeURIComponent(t) : '');
+  if (location.hash !== h) { try { history.replaceState(null, '', h); } catch (e) { /* link stays as it is */ } }
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+const BALL_COLORS = { 1: '#f2c10f', 2: '#1f4fd0', 3: '#d42a2a', 4: '#6a2f9e', 5: '#ee7712', 6: '#14804b', 7: '#7d1f24', 8: '#151515' };
+const ballColor = b => BALL_COLORS[b > 8 ? b - 8 : b];
+const SCRIPT = buildScript();
+const servedByN8n = /\/pool-app\/?$/.test(location.pathname);
+const VIEWS = ['presenter', 'phone', 'venue', 'live', 'camera'];
+const S = {
+  mode: servedByN8n ? 'live' : store.get('mode', 'demo'),
+  base: servedByN8n ? location.origin + location.pathname.replace(/\/pool-app\/?$/, '') : store.get('base', ''),
+  ticket: null, state: null, local: null, err: null, busy: false, receivedAt: 0,
+  view: 'presenter', ack: {}, auto: false, lastEv: null, joinOpen: false,
+  draft: { name: 'Alex', email: '', gameType: '8-ball', refOnly: true },
+  sigs: new Map(), tviews: new Map(), qr: '',
+};
+if (S.mode === 'live' && !S.base) S.mode = 'demo';
+if (S.mode === 'live') { S.ticket = loadTicket(); S.draft.name = ''; }
+
+// ---------- data: local engine (demo) or n8n webhooks (live) ----------
+async function api(action, params) {
+  params = Object.assign({}, params || {});
+  if (S.ticket && params.ticket == null && action !== 'join') params.ticket = S.ticket;
+  if (S.mode === 'live') {
+    try {
+      const u = new URL(S.base.replace(/\/+$/, '') + '/pool');
+      u.searchParams.set('action', action);
+      Object.entries(params).forEach(([k, v]) => { if (v != null) u.searchParams.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v)); });
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      if (!j || !j.tables) throw new Error('unexpected reply, is this the Pool Referee workflow?');
+      S.err = null; return j;
+    } catch (e) { S.err = e.message || String(e); renderMode(); return null; }
+  }
+  if (!S.local || action === 'reset') S.local = seedState(Date.now());
+  const o = handle(S.local, action, params, Date.now());
+  S.local = o.S;
+  return JSON.parse(JSON.stringify(o.response));
+}
+function apply(res, quiet) {
+  if (!res) return;
+  S.state = res; S.receivedAt = Date.now();
+  if (res.me && res.me.ticket) S.ticket = res.me.ticket;
+  else if (S.ticket && !res.me) S.ticket = null;
+  if (S.mode === 'live') saveTicket(S.ticket);
+  if (!res.ok && !quiet) toast(res.error);
+  render();
+}
+async function act(action, params, quiet) { S.busy = true; const r = await api(action, params); S.busy = false; lastChange = Date.now(); apply(r, quiet); return r; }
+
+// ---------- small pieces ----------
+const fmtTime = ms => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const mmss = s => Math.floor(Math.max(0, s) / 60) + ':' + String(Math.max(0, s) % 60).padStart(2, '0');
+const liveLeft = sec => sec == null ? null : Math.max(0, Math.round(sec - (Date.now() - S.receivedAt) / 1000));
+let toastT;
+function toast(msg) { if (!msg) return; const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
+const ICON = {
+  mark: '<svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg>',
+  live: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.4" fill="#ff7a6b"/><path d="M3.8 3.8a6 6 0 0 0 0 8.4M12.2 3.8a6 6 0 0 1 0 8.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  back: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4 6.5 10l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  flag: '<svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true"><path d="M2 17V1.5M2 2h10l-2.5 3.5L12 9H2" fill="none" stroke="#ff7a6b" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  tallyRule: '<svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M2 1v12M6 1v12M10 1v12M14 1v12M.5 11 17.5 3" stroke="#e5ad3e" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  clock: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="#e5ad3e" stroke-width="1.6"/><path d="M9 5v4l3 2" fill="none" stroke="#e5ad3e" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  cam: '<svg width="18" height="16" viewBox="0 0 18 16" aria-hidden="true"><rect x="1" y="4" width="12" height="9" rx="2" fill="none" stroke="#e5ad3e" stroke-width="1.6"/><path d="M13 7.5 17 5v7l-4-2.5" fill="none" stroke="#e5ad3e" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+};
+function tally(n, max) {
+  max = max || 3; n = Math.min(n || 0, max);
+  const marks = Array.from({ length: max }, (_, i) => `<path d="M${4 + i * 8} 2v14" stroke="${i < n ? '#e5ad3e' : '#4a5852'}" stroke-width="2.4" stroke-linecap="round"/>`).join('');
+  return `<span class="tally"><svg width="${max * 8 + 2}" height="18" viewBox="0 0 ${max * 8 + 2} 18" aria-hidden="true">${marks}</svg>${n} of ${max} wins</span>`;
+}
+function ballChip(b) {
+  const c = ballColor(b);
+  const bg = b > 8 ? `linear-gradient(#f2f2ec 0 26%, ${c} 26% 74%, #f2f2ec 74%)` : c;
+  return `<span class="ball" style="background:${bg}" title="${b} ball"><i>${b}</i></span>`;
+}
+const groupBalls = g => g === 'solids' ? [1, 2, 3, 4, 5, 6, 7] : g === 'stripes' ? [9, 10, 11, 12, 13, 14, 15] : [];
+const groupOfBall = b => b === 8 ? 'eight' : b < 8 ? 'solids' : 'stripes';
+function myTable(st) { const me = st && st.me; return me && me.table ? st.tables.find(t => t.id === me.table) : null; }
+function refTable(st) { return st.tables.find(t => t.ref); }
+function cameraTable(st) { const mine = myTable(st); if (mine && mine.game && mine.game.mode === 'camera') return mine; return st.tables.find(t => t.game && t.game.mode === 'camera') || null; }
+const isMe = (st, seat) => !!(st.me && seat && seat.ticket === st.me.ticket);
+const who = (st, t, side) => isMe(st, t[side]) ? 'You' : (t[side] ? t[side].name : '?');
+function pottedText(p) { return p.length ? 'potted the ' + p.join(' and ') : 'missed'; }
+const BADGE_NAMES = { sharpshooter: 'sharpshooter', fair_play: 'fair play', best_shot: 'best shot' };
+const scoreColor = v => v >= 85 ? 'var(--good)' : v >= 70 ? '#a3e635' : v >= 50 ? 'var(--brass)' : 'var(--foul)';
+const scoreChip = s => s && s.score != null ? `<span class="scorechip" style="color:${scoreColor(s.score)}"><b>${s.score}</b><span>${esc(s.grade || '')}</span></span>` : '';
+// The camera referee sends photos, not ball positions: show the real after-shot photo when there is one.
+const photoURL = t => t && t.frameAt && S.mode === 'live' ? S.base.replace(/\/+$/, '') + '/pool-frame?table=' + encodeURIComponent(t.id) + '&at=' + t.frameAt : null;
+const photoHTML = (t, cap) => { const u = photoURL(t); return u ? `<div class="shotphoto"><img src="${u}" alt="Photo of ${esc(t.name)} after the last shot"><span class="cap">${esc(cap || 'Camera photo after the last shot')}</span></div>` : ''; };
+function shotLine(s, noScore) {
+  let out = esc(s.shooter) + ' ' + pottedText(s.potted) + (s.score != null && !noScore ? ' <span class="dim">(' + s.score + ', ' + esc(s.grade || '') + ')</span>' : '');
+  if (s.fouls.length) out += '. <span class="bad">' + esc(s.fouls.join('. ')) + '</span>';
+  if (s.possible && s.possible.length) out += '. <span class="bad">Possible foul, under review</span>';
+  if (s.cleared) out += '. Reviewed: no foul';
+  if (s.note) out += '. ' + esc(s.note.replace(/^.*takes /, 'Takes '));
+  return out;
+}
+function lbHTML(st, pid, top) {
+  const L = st.leaderboard, mine = L.findIndex(p => p.pid === pid);
+  const rows = L.slice(0, top).map((p, i) => [i, p]);
+  if (mine >= top) rows.push(['gap'], [mine, L[mine]]);
+  return `<div class="lb">${rows.map(r => r[0] === 'gap' ? '<div><span>…</span><span></span><span></span></div>' : `<div class="${r[1].pid === pid ? 'me' : ''}"><span>${r[0] + 1}</span><span>${esc(r[1].name)}${r[1].pid === pid ? ' (you)' : ''}</span><span>${r[1].rating}</span></div>`).join('')}</div>`;
+}
+function boardHTML(st, opts) {
+  opts = opts || {};
+  const me = st.me;
+  let list = st.queue;
+  if (opts.gameType) list = list.filter(q => q.gameType === opts.gameType);
+  const called = list.filter(q => q.status === 'called'), waiting = list.filter(q => q.status === 'waiting');
+  const items = called.map(q => `<li class="done"><span>${esc(q.name)}</span><small>called · ${esc((q.table || '').toLowerCase())}</small></li>`)
+    .concat(waiting.slice(0, opts.max || 8).map((q, i) => {
+      const mine = me && q.ticket === me.ticket;
+      const right = mine ? 'you' : opts.eta ? (q.eta ? '~' + q.eta.min + ' min' : '') : (q.refOnly ? 'table 1' : 'any table');
+      return `<li class="${mine ? 'me' : ''}"><span>${i + 1}. ${esc(q.name)}</span><small>${right}</small></li>`;
+    }));
+  return `<section class="board" aria-label="Queue board"><span class="label">${esc(opts.title || 'The board')}</span>${items.length ? `<ol>${items.join('')}</ol>` : '<span class="empty">Nobody waiting</span>'}</section>`;
+}
+function floorHTML(st, mode) {
+  const pos = ['a', 'c', 'b2', 'd'];
+  const mine = myTable(st);
+  const cells = st.tables.map((t, i) => {
+    let cls = 'ft ' + pos[i], lab = '';
+    if (mode === 'you') {
+      if (mine && t.id === mine.id) cls += ' you'; else cls += ' dimmed';
+    } else {
+      if (t.ref) cls += ' ref';
+      if (!t.game && t.status !== 'checkin') cls += ' open';
+      lab = t.game ? (t.ref ? 'ref cam' : t.game.minutes + ' min') : t.status === 'waiting' ? 'needs player' : t.status === 'checkin' ? 'checking in' : 'free';
+    }
+    return `<div class="${cls}"><b>${i + 1}${mode === 'you' && mine && t.id === mine.id ? ' · YOU' : ''}</b>${mode === 'you' ? '' : `<small>${lab}</small>`}</div>`;
+  }).join('');
+  const label = mode === 'you' ? 'Floor plan with your table highlighted' : 'Floor plan: tables 1 and 3 nearest the counter, tables 2 and 4 behind them';
+  return `<div class="floor${mode === 'you' ? ' sm' : ''}" role="img" aria-label="${label}"><div class="counter">${mode === 'you' ? '' : 'COUNTER'}</div>${cells}</div>`;
+}
+function textsHTML(me) {
+  if (!me.texts || !me.texts.length) return '';
+  const x = me.texts[0];
+  const via = me.emailOn ? (S.mode === 'live' ? 'Latest email to you' : 'Latest email (demo: not really sent)') : 'Latest update';
+  return `<div class="sms"><small>${via} · ${fmtTime(x.at)}</small><p>${esc(x.text)}</p></div>`;
+}
+
+// ---------- table drawing ----------
+let tvCount = 0;
+function tableMarkup(id, R) {
+  const dia = [];
+  [125, 250, 375, 625, 750, 875].forEach(x => dia.push([x, -31], [x, 531]));
+  [125, 250, 375].forEach(y => dia.push([-31, y], [1031, y]));
+  return `<defs><clipPath id="bc${id}"><circle r="${R}"/></clipPath></defs>
+    <rect x="-48" y="-48" width="1096" height="596" rx="34" style="fill:var(--rail)"/>
+    <rect x="-15" y="-15" width="1030" height="530" rx="6" style="fill:var(--felt-edge)"/>
+    <rect x="0" y="0" width="1000" height="500" style="fill:var(--felt)"/>
+    <line x1="250" y1="0" x2="250" y2="500" stroke="#fff" stroke-opacity=".1" stroke-width="2"/>
+    <circle cx="750" cy="250" r="3.5" fill="#fff" fill-opacity=".3"/><circle cx="250" cy="250" r="3.5" fill="#fff" fill-opacity=".3"/>
+    ${dia.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#e9dcc3" fill-opacity=".7"/>`).join('')}
+    ${TABLE.pockets.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="23" style="fill:var(--pocket)"/>`).join('')}
+    <polyline class="trace" points="" fill="none" stroke="#f4f4ee" stroke-width="4" stroke-dasharray="12 9" stroke-opacity=".85"/>
+    <circle class="ring" r="${R + 11}" cx="0" cy="0" fill="none" stroke="#ff7a6b" stroke-width="5" stroke-dasharray="9 6" style="display:none"/>
+    <g class="ballz"></g>`;
+}
+function ballMarkup(b, R, id) {
+  if (b === 'cue') return `<circle r="${R}" fill="#f4f4ee"/><circle r="${R}" fill="none" stroke="#000" stroke-opacity=".25" stroke-width="1.2"/>`;
+  b = Number(b); const c = ballColor(b);
+  const body = b > 8 ? `<circle r="${R}" fill="#f4f4ee"/><rect x="${-R}" y="${-R * .56}" width="${2 * R}" height="${R * 1.12}" fill="${c}" clip-path="url(#bc${id})"/>` : `<circle r="${R}" fill="${c}"/>`;
+  return `${body}<circle r="${R}" fill="none" stroke="#000" stroke-opacity=".25" stroke-width="1.2"/><circle r="${R * .5}" fill="#f4f4ee"/><text y="${R * .26}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${R * .7}" fill="#111">${b}</text>`;
+}
+class TableView {
+  constructor() {
+    this.id = ++tvCount; this.R = TABLE.R + 1;
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('viewBox', '-48 -48 1096 596'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Top-down camera view of the pool table');
+    svg.innerHTML = tableMarkup(this.id, this.R);
+    this.svg = svg; this.layer = svg.querySelector('.ballz'); this.trace = svg.querySelector('.trace'); this.ring = svg.querySelector('.ring');
+    this.els = {}; this.key = null; this.raf = 0; this.loopT = 0;
+  }
+  ball(b) { if (!this.els[b]) { const g = document.createElementNS(SVGNS, 'g'); g.innerHTML = ballMarkup(b, this.R, this.id); this.layer.appendChild(g); this.els[b] = g; } return this.els[b]; }
+  place(b, p, op) { const g = this.ball(b); g.setAttribute('transform', 'translate(' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ')'); g.style.opacity = op == null ? 1 : op; }
+  stop() { cancelAnimationFrame(this.raf); clearTimeout(this.loopT); }
+  set(pos) {
+    this.stop();
+    Object.keys(this.els).forEach(b => { if (!pos[b]) { this.els[b].remove(); delete this.els[b]; } });
+    Object.entries(pos).forEach(([b, p]) => this.place(b, p));
+    if (this.els.cue) this.layer.appendChild(this.els.cue);
+  }
+  animate(from, to, shot, done) {
+    this.stop(); from = from || {}; to = to || {};
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pts = shot && shot.cuePath && shot.cuePath.length >= 2 ? shot.cuePath : (from.cue && to.cue ? [from.cue, to.cue] : null);
+    const ids = new Set(Object.keys(from).concat(Object.keys(to)));
+    Object.keys(this.els).forEach(b => { if (!ids.has(b)) { this.els[b].remove(); delete this.els[b]; } });
+    const dist = (a, c) => Math.hypot(a[0] - c[0], a[1] - c[1]);
+    const lerp = (a, c, x) => [a[0] + (c[0] - a[0]) * x, a[1] + (c[1] - a[1]) * x];
+    const ease = x => 1 - Math.pow(1 - x, 3);
+    const tc = pts && pts.length === 3 ? Math.min(0.42, Math.max(0.16, dist(pts[0], pts[1]) / (dist(pts[0], pts[1]) + dist(pts[1], pts[2]) + 1) * 0.6)) : 0;
+    const D = reduce ? 1 : 1500, t0 = performance.now();
+    if (to.cue || from.cue) { this.ball('cue'); this.layer.appendChild(this.els.cue); }
+    const frame = now => {
+      const x = Math.min(1, (now - t0) / D);
+      ids.forEach(b => {
+        if (b === 'cue') {
+          if (!pts) { if (to.cue) this.place('cue', to.cue); else if (from.cue) this.place('cue', from.cue, 1 - x); return; }
+          const p = pts.length === 3 ? (x < tc ? lerp(pts[0], pts[1], x / tc) : lerp(pts[1], pts[2], ease((x - tc) / (1 - tc)))) : lerp(pts[0], pts[1], ease(x));
+          this.place('cue', p, !to.cue && x > 0.85 ? Math.max(0, 1 - (x - 0.85) / 0.15) : 1);
+          return;
+        }
+        const a = from[b], c = to[b], y = x < tc ? 0 : ease((x - tc) / (1 - tc || 1));
+        if (a && c) this.place(b, lerp(a, c, y));
+        else if (a && !c) { const pk = shot && shot.pockets && shot.pockets[b] != null ? TABLE.pockets[shot.pockets[b]] : a; this.place(b, lerp(a, pk, y), y > 0.8 ? Math.max(0, 1 - (y - 0.8) / 0.2) : 1); }
+        else if (!a && c) this.place(b, c, Math.min(1, x * 3));
+      });
+      if (x < 1) this.raf = requestAnimationFrame(frame);
+      else { Object.keys(this.els).forEach(b => { if (!to[b]) { this.els[b].remove(); delete this.els[b]; } }); if (done) done(); }
+    };
+    this.raf = requestAnimationFrame(frame);
+  }
+  show(game, mark) {
+    this.trace.setAttribute('points', '');
+    if (!game || !game.positions) { this.ring.style.display = 'none'; this.set({}); this.key = null; return; }
+    const key = game.id + ':' + (game.lastShot ? game.lastShot.no : 0);
+    const ringAt = mark != null && game.positions[mark] ? game.positions[mark] : null;
+    if (ringAt) { this.ring.setAttribute('cx', ringAt[0]); this.ring.setAttribute('cy', ringAt[1]); this.ring.style.display = ''; } else this.ring.style.display = 'none';
+    if (key === this.key) return;
+    const same = this.key && this.key.split(':')[0] === game.id;
+    this.key = key;
+    if (same && game.lastShot) this.animate(game.lastShot.from, game.positions, game.lastShot); else this.set(game.positions);
+  }
+  replay(key, rep) {
+    if (this.key === key) return;
+    this.key = key;
+    const loop = () => {
+      this.set(rep.from || {});
+      const h = rep.highlight != null && rep.from ? rep.from[rep.highlight] : null;
+      if (h) { this.ring.setAttribute('cx', h[0]); this.ring.setAttribute('cy', h[1]); this.ring.style.display = ''; } else this.ring.style.display = 'none';
+      this.trace.setAttribute('points', (rep.cuePath || []).map(p => p.join(',')).join(' '));
+      this.animate(rep.from, rep.to, rep, () => { this.loopT = setTimeout(loop, 1200); });
+    };
+    loop();
+  }
+}
+function tview(key) { if (!S.tviews.has(key)) S.tviews.set(key, new TableView()); return S.tviews.get(key); }
+function mount(container, key) { const slot = container.querySelector('[data-tbl="' + key.split('@')[0] + '"]'); if (!slot) return null; const v = tview(key); slot.appendChild(v.svg); return v; }
+
+// ---------- player phone ----------
+function phoneScreen(st) {
+  const me = st.me;
+  if (!me || me.status === 'left') return S.joinOpen ? 'join' : 'landing';
+  if (me.result && (me.status === 'done' || (me.status === 'playing' && !S.ack[me.result.gameId]))) return 'result';
+  if (me.status === 'waiting') return 'queue';
+  if (me.status === 'called') { const ct = myTable(st), seat = ct && me.side && ct[me.side]; return seat && seat.present ? 'seated' : 'called'; }   // checked in, opponent not here yet
+  if (me.status === 'missed') return 'missed';
+  if (me.status === 'playing') {
+    const t = myTable(st), g = t && t.game;
+    if (!g) return 'seated';
+    if (g.status === 'confirm') return 'confirm';
+    if (g.mode === 'manual') return 'manual';
+    if (g.status === 'review') return 'review';
+    return 'live';
+  }
+  return 'landing';
+}
+function renderPhone(el, st, key) {
+  const scr = phoneScreen(st), me = st.me, t = myTable(st), g = t && t.game;
+  let data;
+  if (scr === 'join') data = [S.draft.gameType, S.draft.refOnly];
+  else if (scr === 'landing') data = [st.tables.map(x => [x.status, x.game && x.game.minutes, x.game && x.game.left, x.champ && x.champ.name, x.challenger && x.challenger.name]), me && me.status];
+  else if (scr === 'called') data = [me, liveLeft(t && t[me.side] && t[me.side].checkinLeft), t && t[me.side === 'champ' ? 'challenger' : 'champ']];
+  else data = [me, g ? [g.status, g.turn, g.shots && g.shots.length, g.review && [g.review.votes, g.review.staff], g.confirm, g.winner] : null, t && [t.status, t.streak, t.champ && t.champ.name, t.challenger && [t.challenger.name, t.challenger.present, liveLeft(t.challenger.checkinLeft)]], scr === 'queue' ? st.queue : null, scr === 'result' ? st.leaderboard.map(p => p.rating) : null];
+  const sig = scr + JSON.stringify(data);
+  if (S.sigs.get(el) === sig) return;
+  S.sigs.set(el, sig);
+  el.innerHTML = PHONE[scr](st, me, t, g) + (scr === 'join' ? '' : '<button class="quiet askbtn" data-act="ask">Ask the referee <span class="dim" style="font-weight:400">· AI</span></button>');
+  if (scr === 'live') { const v = mount(el, 'phone@' + key); if (v) v.show(g); }
+  if (scr === 'review') { const v = mount(el, 'review@' + key); if (v) v.replay(g.id + ':' + g.review.shotNo + ':' + g.review.source, g.review.replay); }
+  if (scr === 'join') bindJoin(el);
+}
+const topBar = right => `<div class="ph-top"><div class="mark" style="margin:0;min-height:0">${ICON.mark}<b>LOOPOOL</b></div>${right || ''}</div>`;
+const tableBar = (t, right) => `<div class="ph-top"><span class="sign">${esc(t.name)}</span>${right}</div>`;
+const PHONE = {
+  landing(st, me) {
+    const open = st.tables.find(t => !t.game && t.status !== 'checkin');
+    const h1 = open ? (open.status === 'waiting' ? esc(open.name) + '<br>needs a player' : esc(open.name) + '<br>is free') : 'All ' + st.tables.length + ' tables<br>are in play';
+    const ref = refTable(st);
+    let lede = 'Join the queue and we\'ll tell you when a table opens.';
+    if (ref && ref.game && ref.game.left) lede += ' Table 1 is next in about ' + ref.game.left + ' minute' + (ref.game.left > 1 ? 's' : '') + '.';
+    else if (ref && ref.game && ref.game.mode === 'camera') lede += ' Table 1 has a live game on camera.';
+    const rows = st.tables.map((t, i) => `<div class="row"><span class="n${t.ref ? ' ref' : ''}">${i + 1}</span><div style="min-width:0"><b>${t.game || t.status === 'checkin' ? esc(t.champ.name) + ' vs ' + esc(t.challenger ? t.challenger.name : '…') : t.champ ? esc(t.champ.name) + ' needs a challenger' : 'Free'}</b><small>${t.gameType}${t.ref ? ' · camera referee · rated' : ''}</small></div><span class="t">${t.game ? t.game.minutes + ' min' : t.status === 'checkin' ? 'starting' : ''}</span></div>`).join('');
+    return `${topBar(`<a href="${document.body.classList.contains('kiosk') ? '#tv' : '#live'}" style="display:flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:500;text-decoration:none">${ICON.live}Watch Table 1</a>`)}
+      <div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">${h1}</h1><p class="lede">${lede}</p></div>
+      ${me && me.status === 'left' ? '<p class="lede">You left the queue. Put your name back on any time.</p>' : ''}
+      ${floorHTML(st)}
+      <div class="rows">${rows}</div>
+      <button class="cta" data-act="openjoin">Join the queue</button>
+      <ul class="rules"><li>${ICON.tallyRule}Winner stays on, ${st.rules.maxWins} wins max while people wait</li><li>${ICON.clock}${Math.round(st.rules.checkinSec / 60)} minutes to check in when you're called</li><li>${ICON.cam}Table 1 has the camera referee. Games there are rated.</li></ul>`;
+  },
+  join() {
+    const d = S.draft, nine = d.gameType === '9-ball';
+    return `<div class="ph-top" style="justify-content:flex-start;gap:4px"><button class="quiet" data-act="closejoin" aria-label="Back to tables" style="width:44px;min-height:44px;border:0;margin-left:-12px">${ICON.back}</button><span class="dim">Loopool</span></div>
+      <h1 class="h1">Put your name<br>on the board</h1>
+      <form id="joinForm" style="display:flex;flex-direction:column;gap:20px">
+        <div class="field"><label for="jName">Name</label><input id="jName" type="text" maxlength="24" value="${esc(d.name)}" placeholder="First name" autocomplete="given-name" required><small>This is how it's written on the queue board and leaderboard.${d.name === 'Alex' ? ' "Alex" is an example.' : ''}</small></div>
+        <div class="field"><label for="jEmail">Email <span class="dim" style="font-weight:400">(optional)</span></label><input id="jEmail" type="email" value="${esc(d.email)}" placeholder="you@example.com" autocomplete="email" inputmode="email"><small>We email you when your table is ready, with a button to check in. Leave it blank to keep this page open instead.</small></div>
+        <fieldset class="field"><legend>Game</legend><div class="seg"><button type="button" data-game="8-ball" aria-pressed="${!nine}">8-BALL</button><button type="button" data-game="9-ball" aria-pressed="${nine}">9-BALL</button></div></fieldset>
+        <label class="switch" for="jRef"><span><b>Table 1 only (camera referee)</b><small>${nine ? 'The camera referee supports 8-ball for now.' : 'Rated game, fouls called by the camera, shown on the bar TVs. The wait can be longer.'}</small></span><span class="knob"><input id="jRef" type="checkbox" ${d.refOnly && !nine ? 'checked' : ''} ${nine ? 'disabled' : ''}><i></i></span></label>
+        <button class="cta" type="submit">Join the queue</button>
+      </form>`;
+  },
+  queue(st, me) {
+    const eta = me.eta ? (me.eta.min <= 0 ? 'Any minute' : '~' + me.eta.min + ' min') : 'Waiting';
+    const et = me.eta ? st.tables.find(t => t.name === me.eta.table) : null;
+    const etInfo = et ? (et.game ? esc(et.champ.name) + ' vs ' + esc(et.challenger.name) + ', ' + et.game.minutes + ' min in' : 'between games') : '';
+    return `${topBar('<span class="mono dim" style="font-size:13px">You\'re on the board</span>')}
+      <div class="ticket"><div class="main"><span class="label">Queue ticket</span><span class="no">${esc(me.ticket)}</span><span class="who">${esc(me.name)} · ${me.gameType} · ${me.refOnly ? 'Table 1 only' : 'any table'}</span></div><div class="stub"><b>#${me.position}</b><span>IN LINE</span></div></div>
+      <div class="stats"><div class="stat"><b>${eta}</b><span>estimated wait</span></div><div class="stat"><b>${me.eta ? esc(me.eta.table) : '—'}</b><span>${etInfo}</span></div></div>
+      ${boardHTML(st, { gameType: me.gameType, title: 'The board · ' + me.gameType })}
+      ${textsHTML(me)}
+      <div class="push"><button class="quiet" data-act="leave">Leave the queue</button></div>`;
+  },
+  called(st, me, t) {
+    const oppSide = me.side === 'champ' ? 'challenger' : 'champ', opp = t[oppSide];
+    return `${topBar(`<span class="mono" style="font-size:13px;color:var(--brass)">${esc(me.ticket)}</span>`)}
+      <div class="ready"><span class="label">Your table is ready</span><span class="big">${esc(t.name).toUpperCase()}</span><div class="count"><b>${mmss(liveLeft(t[me.side].checkinLeft))}</b><span>left to check in</span></div></div>
+      ${floorHTML(st, 'you')}
+      ${opp ? `<div class="versus"><div class="p"><span class="chalk">${esc(me.name)}</span><small>rating ${me.rating}</small><small>${me.side === 'champ' ? 'holds the table' : 'challenger'}</small></div><span class="x">VS</span><div class="p r"><span class="chalk">${esc(opp.name)}</span><small>rating ${opp.rating}</small><small>${oppSide === 'champ' ? 'holds the table' : 'challenger'}</small>${oppSide === 'champ' && t.streak ? tally(t.streak, st.rules.maxWins) : ''}</div></div>` : ''}
+      <p class="lede" style="font-size:14px">Winner stays on.${opp && oppSide === 'champ' ? ' Beat ' + esc(opp.name) + ' to take over ' + esc(t.name) + '.' : ''} If you don't check in, the next name on the board is called.</p>
+      <div class="push"><button class="cta" data-act="checkin">I'm at the table</button></div>`;
+  },
+  seated(st, me, t) {
+    const other = t[me.side === 'champ' ? 'challenger' : 'champ'];
+    return `${tableBar(t, `<span class="mono dim" style="font-size:13px">${me.side === 'champ' ? 'YOU HOLD THE TABLE' : 'CHECKED IN'}</span>`)}
+      <h1 class="h1">${other ? (other.present ? 'Racking up' : esc(other.name) + '<br>is on the way') : 'Waiting for<br>a challenger'}</h1>
+      <p class="lede">${other ? (other.present ? 'Both players are here. The camera starts scoring from the break.' : esc(other.name) + ' has ' + mmss(liveLeft(other.checkinLeft)) + ' to check in.') : 'The next name on the board for ' + esc(t.gameType) + ' is called as soon as they join.'}</p>
+      ${me.side === 'champ' && t.streak ? `<div class="hold"><div class="hd"><b>Your run on ${esc(t.name)}</b>${tally(t.streak, st.rules.maxWins)}</div></div>` : ''}
+      ${boardHTML(st, { gameType: t.gameType, title: 'The board · ' + t.gameType })}
+      ${me.side === 'champ' && !other ? '<div class="push"><button class="quiet" data-act="leave">Give up the table</button></div>' : ''}`;
+  },
+  live(st, me, t, g) {
+    const sides = [me.side, me.side === 'champ' ? 'challenger' : 'champ'];
+    const last = g.shots[g.shots.length - 1];
+    return `${tableBar(t, `<span class="live-tag">Live${g.shots.length ? ' · shot ' + g.shots.length : ''}${g.rated ? ' · rated' : ''}</span>`)}
+      <div style="display:flex;flex-direction:column;gap:10px">${sides.map(s => playerPanel(st, t, g, s)).join('')}</div>
+      ${photoURL(t) ? photoHTML(t) : '<div class="tbl" data-tbl="phone"></div>'}
+      <p class="lastshot">${last ? '<span class="dim">Last shot:</span>' + shotLine(last) + '.' : '<span class="dim">Break when you\'re ready.</span> The camera scores from the first shot.'}</p>
+      ${last && last.ai ? `<p class="ailine"><b>AI</b><span>${esc(last.ai)}</span></p>` : ''}
+      ${last && last.tip ? `<div style="display:flex;gap:10px;align-items:center">${scoreChip(last)}<p class="tipline" style="flex:1">Tip: ${esc(last.tip)}</p></div>` : ''}
+      <button class="quiet" data-act="flag" ${!last || last.flagged || last.cleared ? 'disabled' : ''}>${ICON.flag}Flag the last shot as a foul</button>
+      ${g.shots.length > 1 ? `<ol class="log" reversed>${g.shots.slice(-4, -1).reverse().map(s => `<li><span class="n">#${s.no}</span><span>${shotLine(s)}</span></li>`).join('')}</ol>` : ''}`;
+  },
+  review(st, me, t, g) {
+    const r = g.review, mine = r.votes[me.side];
+    const shooter = t[r.side], shooterIsMe = isMe(st, shooter);
+    let h1 = esc(r.foul.text);
+    if (r.source === 'player') {
+      const iFlagged = r.foul.text.indexOf(me.name + ' flagged') === 0, opp = t[me.side === 'champ' ? 'challenger' : 'champ'];
+      h1 = iFlagged ? (shooterIsMe ? 'You flagged your own shot' : 'You flagged ' + esc(shooter.name) + '’s shot') : (shooterIsMe ? esc(opp ? opp.name : 'A player') + ' flagged your shot' : esc(r.foul.text));
+    }
+    if (r.source === 'ai' && r.ball != null) {
+      const myGroup = g.groups[me.side];
+      h1 = shooterIsMe ? 'You hit the ' + r.ball + ' first' : esc(shooter.name) + ' hit ' + (myGroup && groupOfBall(r.ball) === myGroup ? 'your' : 'the') + ' ' + r.ball + ' first';
+    }
+    const voteBox = s => { const v = r.votes[s], say = isMe(st, t[s]) ? 'Say ' : 'Says '; return `<div class="vote${v ? '' : ' wait'}"><span class="chalk">${esc(who(st, t, s))}</span><span class="${v === 'accept' ? 'no' : v === 'dispute' ? 'yes' : ''}">${v === 'accept' ? say + 'foul' : v === 'dispute' ? say + 'no foul' : 'Still deciding'}</span></div>`; };
+    const conf = r.foul.conf ? Math.round(r.foul.conf * 100) : null, sure = Math.round((r.threshold || 0.8) * 100);
+    // Shots read from camera photos have no ball positions to replay: show the photo and say so.
+    const look = r.replay && r.replay.from ? `<div class="replay"><div class="tbl" data-tbl="review"></div><p class="cliptag">Replay of shot ${r.shotNo}. The ring marks the first ball the cue ball touched.</p></div>`
+      : photoURL(t) ? `<div class="replay">${photoHTML(t, 'Camera photo after shot ' + r.shotNo)}<p class="cliptag">There is no replay of this shot, only the photo taken after it. Decide from what you both saw.</p></div>` : '';
+    const ifFoulMe = isMe(st, t[r.ifFoul]);
+    return `${tableBar(t, '<span class="mono" style="font-size:13px;color:var(--foul)">PLAY PAUSED</span>')}
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="label" style="color:var(--foul)">Foul review · shot ${r.shotNo}</span><h1 class="h1" style="font-size:38px">${h1}</h1></div>
+      ${look}
+      ${conf != null ? `<div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;font-size:14px"><span>How sure the camera is</span><span class="mono">${conf}%</span></div><div class="meter"><i style="width:${conf}%"></i><b style="left:${sure}%"></b></div><span class="dim" style="font-size:13px">Above ${sure}% the camera calls it on its own. Below that, both players decide.</span></div>` : `<p class="lede" style="font-size:14px">A player flagged this shot. ${r.replay && r.replay.from ? 'Watch the replay, then both players decide.' : 'Both players decide.'}</p>`}
+      <div class="two">${voteBox(me.side)}${voteBox(me.side === 'champ' ? 'challenger' : 'champ')}</div>
+      <div class="push">${r.staff ? '<p class="lede" style="font-size:14px">You disagree, so a staff member decides on the counter tablet.</p>' : mine ? '<p class="lede" style="font-size:14px">Waiting for the other player.</p>' : '<div class="two"><button class="cta foul" data-act="vote" data-v="accept">Foul</button><button class="cta line" data-act="vote" data-v="dispute">No foul</button></div>'}
+      <p class="dim" style="font-size:13px;text-align:center">If it's a foul, ${ifFoulMe ? 'you get' : esc(t[r.ifFoul].name) + ' gets'} ball in hand.</p></div>`;
+  },
+  confirm(st, me, t, g) {
+    const iWon = g.winner === me.side;
+    const c = s => `<div class="vote${g.confirm[s] ? '' : ' wait'}"><span class="chalk">${esc(who(st, t, s))}</span><span class="${g.confirm[s] ? 'yes' : ''}">${g.confirm[s] ? 'Confirmed' : 'Not yet'}</span></div>`;
+    return `${tableBar(t, '<span class="mono dim" style="font-size:13px">GAME OVER</span>')}
+      <div class="won" style="display:flex;flex-direction:column;gap:6px"><span class="lede">${esc(g.winReason || '')}</span><span class="big">${iWon ? 'You won' : esc(t[g.winner].name) + ' wins'}</span></div>
+      <p class="lede" style="font-size:14px">Both players confirm, so the rating change is fair.</p>
+      <div class="two">${c(me.side)}${c(me.side === 'champ' ? 'challenger' : 'champ')}</div>
+      <div class="push">${g.confirm[me.side] ? '<p class="lede" style="font-size:14px;text-align:center">Waiting for the other player.</p>' : '<button class="cta" data-act="confirm">Confirm result</button>'}</div>`;
+  },
+  manual(st, me, t) {
+    const opp = t[me.side === 'champ' ? 'challenger' : 'champ'];
+    return `${tableBar(t, `<span class="mono dim" style="font-size:13px">${t.gameType.toUpperCase()} · NO CAMERA</span>`)}
+      <h1 class="h1">Game on</h1>
+      <p class="lede">You vs ${esc(opp.name)}. This table has no camera referee, so tell us who won when you finish.</p>
+      <div class="push"><div class="two"><button class="cta" data-act="report" data-v="won">I won</button><button class="cta line" data-act="report" data-v="lost">I lost</button></div></div>`;
+  },
+  result(st, me, t) {
+    const r = me.result, won = r.won;
+    const next = t && t.challenger;
+    const before = r.rating - r.delta;
+    return `<div class="ph-top"><span class="sign">${esc(r.table)}</span><span class="mono dim" style="font-size:13px">FINAL</span></div>
+      <div class="won" style="display:flex;flex-direction:column;gap:4px"><span class="lede">${won ? 'You beat ' + esc(r.opponent) : esc(r.opponent) + ' won this one'}</span><span class="big">${won ? 'You won' : 'Good game'}</span>
+        ${r.rated ? `<div class="delta"><b class="${r.delta < 0 ? 'down' : ''}">${r.delta >= 0 ? '+' : ''}${r.delta}</b><span>rating ${before} → ${r.rating}</span></div>` : '<div class="delta"><span>Unrated game</span></div>'}</div>
+      ${won && r.stayOn ? `<div class="hold"><div class="hd"><b>You hold ${esc(r.table)}</b>${tally(r.streak, st.rules.maxWins)}</div><span class="dim" style="font-size:14px">Winner stays on. ${next ? `Next on the board: <span class="chalk" style="font-size:20px;color:var(--chalk)">${esc(next.name)}</span>, ${next.present ? 'ready to play.' : 'checking in now.'}` : 'Waiting for the next name on the board.'}</span></div>` : ''}
+      ${r.retired ? `<div class="hold"><div class="hd"><b>${st.rules.maxWins} in a row</b>${tally(st.rules.maxWins, st.rules.maxWins)}</div><span class="dim" style="font-size:14px">House rule: the table goes to the next players now. Nice run.</span></div>` : ''}
+      <section aria-label="Leaderboard" style="display:flex;flex-direction:column;gap:4px"><span class="label">Tonight's ratings</span>${lbHTML(st, me.pid, 4)}</section>
+      <div class="push">${won && r.stayOn ? `<button class="cta" data-act="ack" data-g="${esc(r.gameId)}">${next ? 'Play ' + esc(next.name) + ' next' : 'Keep the table'}</button>` : `<button class="cta" data-act="rejoin">Put my name back on the board</button><button class="quiet" data-act="done">I'm done for tonight</button>`}</div>`;
+  },
+  missed(st, me) {
+    return `${topBar(`<span class="mono dim" style="font-size:13px">${esc(me.ticket)}</span>`)}
+      <h1 class="h1">You missed<br>your turn</h1>
+      <p class="lede">The ${Math.round(st.rules.checkinSec / 60)} minutes ran out, so the next name on the board was called.</p>
+      ${textsHTML(me)}
+      <div class="push"><button class="cta" data-act="rejoin">Put my name back on the board</button></div>`;
+  },
+};
+function playerPanel(st, t, g, side) {
+  const grp = g.groups[side], all = groupBalls(grp), left = all.filter(b => g.onTable.includes(b)), potted = all.filter(b => !g.onTable.includes(b));
+  const flag = g.turn === side ? `<span class="flag shoot">${g.ballInHand ? 'Ball in hand' : 'To shoot'}</span>` : side === 'champ' ? '<span class="flag hold">Holds table</span>' : '<span></span>';
+  const sub = grp ? grp + ' · ' + (left.length ? left.length + ' left' : 'on the 8') : 'open table';
+  const tray = !grp ? '<span class="open">First ball potted decides the groups</span>' : potted.length ? potted.map(ballChip).join('') : '<span class="open">None potted yet</span>';
+  return `<div class="player${g.turn === side ? ' turn' : ''}"><div class="hd"><span class="chalk">${esc(t[side].name)}<small>${sub}</small></span>${flag}</div><div class="tray" aria-label="Potted balls">${tray}</div></div>`;
+}
+function bindJoin(el) {
+  const f = $('#joinForm', el); if (!f) return;
+  f.addEventListener('input', () => { S.draft.name = $('#jName', f).value; S.draft.email = $('#jEmail', f).value; S.draft.refOnly = $('#jRef', f).checked; });
+  $$('[data-game]', f).forEach(b => b.addEventListener('click', () => { S.draft.gameType = b.dataset.game; S.sigs.delete(el); render(); }));
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!S.draft.name.trim()) { toast('Add your name first.'); return; }
+    const r = await act('join', { name: S.draft.name, email: S.draft.email, gameType: S.draft.gameType, refOnly: S.draft.refOnly && S.draft.gameType === '8-ball' });
+    if (r && r.ok) { S.joinOpen = false; toast('You\'re on the board. Ticket ' + r.me.ticket); }
+  });
+}
+
+// ---------- bar TV ----------
+// The TV is laid out once, on a 16:9 canvas (1280 x 720), and scaled to the screen the way signage is: the whole screen
+// at #tv, the column width on the Bar TV tab. Columns too narrow for that (All screens, phones) keep the stacked layout.
+const TV_W = 1280, TV_H = 720;
+function fitTV(el) {
+  const full = document.body.classList.contains('tvmode');
+  const w = full ? window.innerWidth : el.clientWidth;
+  const fit = w >= (full ? 900 : 1100);
+  el.classList.toggle('tvfit', fit);
+  if (full) document.body.classList.toggle('tvfull', fit);
+  if (fit) el.style.setProperty('--tvz', Math.floor((full ? Math.min(w / TV_W, window.innerHeight / TV_H) : w / TV_W) * 10000) / 10000);
+}
+// Right column, under the queue: the last shot when the AI has scored it from the camera photos (the call, the 0-100
+// score and the tip; the after-photo is the big picture beside it), tonight's results otherwise.
+function tvShotHTML(s) {
+  const col = scoreColor(s.score);
+  return `<section class="shotcard" aria-label="Last shot"><span class="label">Last shot · shot ${s.no}</span>
+    <div class="sc"><b class="ring" style="color:${col}" aria-label="Score ${s.score} out of 100">${s.score}</b><p>${s.grade ? `<strong style="color:${col}">${esc(s.grade)}</strong> ` : ''}${shotLine(s, true)}.</p></div>
+    ${s.tip ? `<p class="tipline">Tip for ${esc(s.shooter)}: ${esc(s.tip)}</p>` : ''}</section>`;
+}
+function tvResultsHTML(st) {
+  const rows = st.recent.slice(0, 3);
+  return `<section class="tvres" aria-label="Tonight's results"><span class="label">Tonight's results</span>${rows.length ? `<div class="rs">${rows.map(r => `<div><b>${esc(r.winner)}</b> beat ${esc(r.loser)}<small>${esc(r.table)}${r.rated && r.delta ? ' · +' + r.delta + ' rating' : ''}</small></div>`).join('')}</div>` : '<p class="dim">No games finished yet tonight.</p>'}</section>`;
+}
+function renderTV(el, st, key) {
+  fitTV(el);
+  const t = cameraTable(st) || refTable(st), g = t.game && t.game.mode === 'camera' ? t.game : null;
+  const feed = st.feed.slice(0, 5), top = st.leaderboard.slice(0, 6);
+  const sig = JSON.stringify([t.id, t.frameAt, t.gameType, t.status, t.streak, !g && t.game && t.game.minutes, t.champ && [t.champ.name, t.champ.rating], t.challenger && [t.challenger.name, t.challenger.present], g && [g.id, g.shots.length, g.status, g.turn, g.review && [g.review.staff, g.review.votes], g.shots[g.shots.length - 1]], st.queue.map(q => q.ticket + q.status + (q.eta && q.eta.min)), top.map(p => p.name + p.rating), st.leaderboard.map(p => p.badges), st.recent.slice(0, 3).map(r => r.at), feed.map(f => f.at + f.text), S.qr ? 1 : 0, st.me && st.me.ticket]);
+  if (S.sigs.get(el) === sig) return;
+  S.sigs.set(el, sig);
+  let board = '', banner = '', idle = '';
+  if (g) {
+    const pl = (side, right) => {
+      const grp = g.groups[side], potted = groupBalls(grp).filter(b => !g.onTable.includes(b));
+      const meta = [t[side].rating, grp || 'open table', side === 'champ' && t.streak ? t.streak + ' win' + (t.streak > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
+      const name = `<span class="chalk">${right ? `<small>${esc(meta)}</small> ` : ''}${esc(t[side].name)}${right ? '' : ` <small>${esc(meta)}</small>`}</span>`;
+      return `<div class="p${right ? ' r' : ''}${g.turn === side ? ' turn' : ''}">${name}<div class="tray">${potted.length ? potted.map(ballChip).join('') : '<span class="open">—</span>'}</div></div>`;
+    };
+    board = `<div class="score">${pl('challenger')}<div class="mid">${g.shots.length ? 'SHOT<b class="num">' + g.shots.length + '</b>' : 'BREAK'}</div>${pl('champ', true)}</div>`;
+    if (g.status === 'review') banner = `<div class="banner">${g.review.staff ? 'PLAYERS DISAGREE · STAFF DECIDING' : 'POSSIBLE FOUL · SHOT ' + g.review.shotNo + ' · PLAYERS DECIDING'}</div>`;
+    if (g.status === 'confirm') banner = `<div class="banner win">${esc(t[g.winner].name).toUpperCase()} WINS</div>`;
+  } else {
+    // No camera game: the strip still says who is at the table, so the screen keeps one layout between games.
+    const ch = t.champ, nx = t.challenger;
+    const seat = (s, right) => {
+      if (!s) return `<div class="p${right ? ' r' : ''}"><span class="chalk dim">Open seat</span></div>`;
+      const meta = esc([s.rating, right && t.streak ? t.streak + ' win' + (t.streak > 1 ? 's' : '') : ''].filter(Boolean).join(' · '));
+      return `<div class="p${right ? ' r' : ''}"><span class="chalk">${right ? `<small>${meta}</small> ` : ''}${esc(s.name)}${right ? '' : ` <small>${meta}</small>`}</span></div>`;
+    };
+    if (ch) board = `<div class="score">${seat(nx)}<div class="mid">VS</div>${seat(ch, true)}</div>`;
+    const head = t.game ? 'Camera starts with the next game' : nx ? 'Up next' : ch ? esc(t.name) + ' needs a player' : esc(t.name) + ' is open';
+    const line = t.game ? esc(ch.name) + ' and ' + esc(nx.name) + ' are finishing a game (' + t.game.minutes + ' min in).' : nx ? (nx.present ? 'Both players are at the table.' : esc(nx.name) + ' is checking in.') : 'Scan the code to put your name on the board.';
+    idle = `<div class="idle"><div><b>${head}</b>${line}</div></div>`;
+  }
+  const f = feed[0], last = g && g.shots.length ? g.shots[g.shots.length - 1] : null;
+  const honours = st.leaderboard.flatMap(p => (p.badges || []).map(b => `<span><span class="badge">${BADGE_NAMES[b] || esc(b)}</span> ${esc(p.name)}</span>`));
+  el.innerHTML = `<div class="tv"><div class="tv-top"><div class="t"><span class="onair">LIVE</span><span class="sign">${esc(t.name)} · ${g && g.rated ? 'Rated ' : ''}${esc(t.gameType)}</span></div><div class="mark" style="margin:0;min-height:0">${ICON.mark}<b>LOOPOOL</b></div></div>
+    <div class="tv-grid"><div class="tv-main">${board}<div class="tvtable">${g && photoURL(t) ? photoHTML(t, 'Camera photo' + (g.shots.length ? ' · after shot ' + g.shots.length : '')) : '<div data-tbl="tv"></div>'}${banner}${idle}</div>
+      <div class="ticker"><p class="now"><b class="${f && f.kind === 'ai' ? 'ai' : ''}">${f && f.kind === 'ai' ? 'AI CALL' : 'LATEST'}</b><span>${f ? esc(f.text) : 'Waiting for the first shot'}</span></p>${feed.length > 1 ? `<div class="older"><div>${feed.slice(1).map(x => `<p>${esc(x.text)}</p>`).join('')}</div></div>` : ''}</div></div>
+      <div class="aside">
+        ${boardHTML(st, { gameType: t.gameType, title: 'On the board · ' + t.gameType, eta: true, max: 4 })}
+        ${last && last.score != null ? tvShotHTML(last) : tvResultsHTML(st)}
+        <section aria-label="Tonight's ratings" class="ratings"><span class="label">Tonight's ratings</span><div class="rt">${top.map((p, i) => `<div><span class="rk">${i + 1}</span><span class="nm">${esc(p.name)}</span><span class="pts">${p.rating}</span></div>`).join('')}</div>${honours.length ? `<p class="honours">${honours.join('')}</p>` : ''}</section>
+        <div class="qrline"><span class="qrbox">${S.qr ? `<img src="${S.qr}" alt="QR code to join the queue">` : ''}</span><span class="sign">Scan to put your name on the board</span></div>
+      </div></div></div>`;
+  const v = mount(el, 'tv@' + key); if (v) v.show(g, g && g.status === 'review' && g.review ? g.review.ball : null);
+}
+
+// ---------- counter tablet ----------
+function renderVenue(el, st) {
+  const sig = JSON.stringify([st.tables.map(t => [t.status, t.streak, t.champ && [t.champ.name, t.champ.rating], t.challenger && [t.challenger.name, t.challenger.present, liveLeft(t.challenger.checkinLeft)], t.game && [t.game.minutes, t.game.status, t.game.shots && t.game.shots.length]]), st.queue, st.recent.slice(0, 5).map(r => r.at), st.feed.slice(0, 10).map(f => f.at + f.text), S.qr ? 1 : 0, Math.floor(st.now / 60000)]);
+  if (S.sigs.get(el) === sig) return;
+  S.sigs.set(el, sig);
+  const statusText = t => ({ playing: ['play', 'In play'], review: ['alert', 'Foul review'], staff: ['alert', 'Staff decision'], confirm: ['wait', 'Confirming result'], checkin: ['wait', 'Checking in'], waiting: ['wait', 'Needs a player'], empty: ['free', 'Free'] }[t.status] || ['free', t.status]);
+  const seat = (t, side) => {
+    const s = t[side]; if (!s) return '<div class="seat"><span class="dim">Open seat</span></div>';
+    const right = !s.present ? 'checking in ' + mmss(liveLeft(s.checkinLeft)) : side === 'champ' && t.streak ? s.rating + ' · ' + t.streak + ' in a row' : String(s.rating);
+    return `<div class="seat"><span class="chalk">${esc(s.name)}</span><small>${right}</small></div>`;
+  };
+  const cards = st.tables.map(t => {
+    const g = t.game, [cls, txt] = statusText(t);
+    let extra = '';
+    if (g && g.status === 'review' && g.review) extra = g.review.staff
+      ? `<p style="font-size:13.5px">Players disagree on shot ${g.review.shotNo}: ${esc(g.review.foul.text)}.</p><div class="decide"><button class="uphold" data-act="staff" data-t="${t.id}" data-v="uphold">Foul</button><button data-act="staff" data-t="${t.id}" data-v="overrule">No foul</button></div>`
+      : `<p class="dim" style="font-size:13.5px">Players are reviewing shot ${g.review.shotNo}.</p>`;
+    const meta = [t.gameType, t.ref ? 'camera referee' : '', g ? (g.minutes ? g.minutes + ' min' : 'just started') : '', g && g.mode === 'camera' && g.shots.length ? 'shot ' + g.shots.length : ''].filter(Boolean).join(' · ');
+    return `<div class="tcard${t.status === 'staff' ? ' staff' : ''}"><div class="hd"><span class="sign">${esc(t.name)}</span><span class="st ${cls}">${txt}</span></div><span class="meta">${esc(meta)}</span><div class="felt"></div>${seat(t, 'champ')}${seat(t, 'challenger')}${extra}</div>`;
+  }).join('');
+  // Red is kept for what staff must act on: a foul the players disagree about, until staff decide it. Everything else is a plain record.
+  const needsStaff = f => f.kind === 'staff' && st.tables.some(t => t.id === f.table && t.status === 'staff' && t.game && t.game.id === f.game && t.game.review && t.game.review.shotNo === f.shot);
+  el.innerHTML = `<div class="tablet"><div class="tab-top"><span class="sign">${esc(st.venue.name)}</span><span class="clock num">${fmtTime(st.now)}</span></div>
+    <div class="tgrid"><div class="panel" style="min-width:0"><div class="tables">${cards}</div>
+      <section aria-label="Activity" class="panel" style="margin-top:6px"><span class="label">Activity</span><div class="activity">${st.feed.slice(0, 8).map(f => needsStaff(f) ? `<div class="todo"><span class="tm">${fmtTime(f.at)}</span><span>${ICON.flag}${esc(f.text)}</span></div>` : `<div><span class="tm">${fmtTime(f.at)}</span><span>${esc(f.text)}</span></div>`).join('')}</div></section></div>
+      <div class="panel" style="min-width:0;gap:16px">
+        ${boardHTML(st, { title: 'The board · all games', eta: true })}
+        <div class="qrline"><span class="qrbox">${S.qr ? `<img src="${S.qr}" alt="QR code to join the queue">` : ''}</span><span class="sign">Scan to put your name on the board</span></div>
+        <section aria-label="Recent results" class="panel"><span class="label">Recent results</span><div class="results">${st.recent.slice(0, 5).map(r => `<div><span><b>${esc(r.winner)}</b> beat ${esc(r.loser)}</span><small>${esc(r.table)}${r.rated ? ' · +' + r.delta : ''}</small></div>`).join('')}</div></section>
+      </div></div></div>`;
+}
+
+// ---------- shell ----------
+function renderMode() {
+  const b = $('#modeBtn');
+  b.className = 'src' + (S.mode === 'live' ? (S.err ? ' err' : ' live') : '');
+  b.textContent = S.mode === 'live' ? (S.err ? 'n8n unreachable' : 'Live from n8n') : 'Demo data';
+}
+function renderControls(st) {
+  const ct = st && cameraTable(st), g = ct && ct.game, me = st && st.me;
+  $('[data-act="shot"]').disabled = !(g && g.status === 'live' && g.shots.length < SCRIPT.length);
+  $('[data-act="skipturn"]').disabled = !(me && me.status === 'waiting');
+  $('[data-act="quick"]').disabled = !!(me && ['waiting', 'called', 'playing'].includes(me.status));
+  const ab = $('#autoBtn'); ab.textContent = S.auto ? 'Pause auto-play' : 'Auto-play shots'; ab.classList.toggle('on', S.auto);
+  if (st) $('#clock').textContent = fmtTime(st.now);
+  if (S.lastEv) $('#evChip').textContent = 'Shot ' + S.lastEv.shotNo + ' sent to n8n: potted [' + S.lastEv.potted.join(', ') + '], first contact ' + S.lastEv.firstContact + (S.lastEv.confidence.firstContact ? ' (' + Math.round(S.lastEv.confidence.firstContact * 100) + '% sure)' : '') + (S.lastEv.cueBallPotted ? ', scratch' : '');
+}
+function render() {
+  $$('.views a').forEach(a => { const on = a.dataset.view === S.view; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  VIEWS.forEach(v => $('#v-' + v).classList.toggle('on', v === S.view));
+  renderMode();
+  const st = S.state; renderControls(st);
+  if (!st) return;
+  const v = S.view;
+  if (v === 'presenter' || v === 'phone') renderPhone($('#v-' + v + ' [data-phone]'), st, v);
+  if (v === 'presenter' || v === 'live') renderTV($('#v-' + v + ' [data-tv]'), st, v);
+  if (v === 'presenter' || v === 'venue') renderVenue($('#v-' + v + ' [data-venue]'), st);
+  if (v === 'venue') renderStaff(st);
+  if (v === 'camera') { const el = $('#v-camera [data-camera]'); if (el && !el.dataset.mounted && window.CameraView) { el.dataset.mounted = '1'; window.CameraView.mount(el, { base: S.mode === 'live' ? S.base : '', table: 'T1' }); } }
+}
+// ---------- staff tools on the counter tablet (start match, switch turn, foul, undo, next match, winner, group, clear) ----------
+function renderStaff(st) {
+  const t = st.tables.find(x => x.id === $('#sTable').value) || st.tables[0], g = t.game;
+  const names = [t.challenger, t.champ].filter(Boolean).map(s => s.name), sig = names.join('|');
+  [$('#sWho'), $('#sWho2')].forEach(sel => { if (sel.dataset.sig !== sig) { sel.innerHTML = names.map(n => `<option>${esc(n)}</option>`).join('') || '<option value="">No players</option>'; sel.dataset.sig = sig; } });
+  const cam = g && g.mode === 'camera', live = cam && g.status === 'live', type = (g && g.gameType) || t.gameType, eight = type === '8-ball';
+  // each tool is switched off when it cannot do anything on this table, and the line beside the table name says why
+  let now;
+  if (!g) now = (t.champ ? t.champ.name + ' holds the table' + (t.challenger ? ', ' + t.challenger.name + ' is checking in' : ', waiting for a challenger') : 'Free') + '. No game to fix.';
+  else if (!cam) now = type + ' · ' + g.minutes + ' min in · no camera here, so staff can only declare the winner or clear the table.';
+  else now = type + ' · ' + (g.shots.length ? 'shot ' + g.shots.length : 'no shots yet') + ' · ' + (g.turn ? t[g.turn].name + ' to shoot' + (g.ballInHand ? ' (ball in hand)' : '') : g.status === 'confirm' ? 'game over, players are confirming the result' : 'paused for a foul review: decide it on the table card above');
+  $('#sNow').textContent = now;
+  $('#sSwitch').disabled = $('#sFoul').disabled = !live;
+  $('#sGrp').disabled = $('#sWho2').disabled = $('#sGroup').disabled = !(live && eight);
+  $('#sGrp').title = live && !eight ? 'Solids and stripes only exist in 8-ball' : '';
+  $('#sEnd').disabled = $('#sWho').disabled = !g;
+  $('#sNext').disabled = !!g;
+  $('#sUndo').disabled = !t.canUndo;
+  $('#sClear').disabled = !g && !t.champ && !t.challenger;
+}
+// An in-app "are you sure?" that matches the other dialogs. Resolves true only when the action button is pressed
+// (Esc and the other button both mean no). The safe button gets the focus.
+function askConfirm(o) {
+  const d = $('#confirmDlg');
+  if (!d.showModal) return Promise.resolve(window.confirm(o.title + '\n\n' + o.text));   // browsers without <dialog>
+  $('#cfTitle').textContent = o.title; $('#cfText').textContent = o.text;
+  $('#cfNo').textContent = o.no; $('#cfYes').textContent = o.yes;
+  d.returnValue = '';
+  return new Promise(done => { d.addEventListener('close', () => done(d.returnValue === 'yes'), { once: true }); d.showModal(); $('#cfNo').focus(); });
+}
+async function staffAct(a) {
+  const table = $('#sTable').value, tname = $('#sTable').selectedOptions[0].textContent.replace(/ \(.*$/, '');
+  const t0 = S.state && S.state.tables.find(x => x.id === table), g0 = t0 && t0.game;
+  const at0 = t0 ? [t0.challenger, t0.champ].filter(Boolean).map(x => x.name) : [];
+  if (a === 'start') {
+    const p1 = $('#sP1').value.trim(), p2 = $('#sP2').value.trim();
+    if (!p1 || !p2) return toast('Type both player names first.');
+    const params = { table, players: p1 + ',' + p2, gameType: $('#sGame').value };
+    const replace = () => askConfirm({ title: 'Replace the game on ' + tname + '?', text: (at0.length === 2 ? at0.join(' and ') + ' are playing on ' + tname : 'A game is being played on ' + tname) + '. Starting ' + p1 + ' vs ' + p2 + ' ends that game with no winner. Undo last change brings it back.', yes: 'Start the new match', no: 'Keep the game' });
+    if (g0 && g0.status !== 'confirm') { if (!await replace()) return; params.force = '1'; }
+    let r = await act('start_match', params, true);
+    if (r && !r.ok && r.code === 409 && !params.force) { if (!await replace()) return; params.force = '1'; r = await act('start_match', params, true); }   // a game started there after this screen last refreshed
+    if (r && !r.ok) toast(r.error);
+    if (r && r.ok) { $('#sP1').value = ''; $('#sP2').value = ''; toast(p1 + ' vs ' + p2 + ' started on ' + tname + '. ' + p1 + ' breaks.'); }
+    return;
+  }
+  if (a === 'end') { const w = $('#sWho').value; if (!w) return toast('No players at this table.'); const r = await act('end_match', { table, winner: w }); if (r && r.ok) toast(w + ' wins on ' + tname + '.'); return; }
+  if (a === 'group') { const w = $('#sWho2').value, grp = $('#sGroup').value; const r = await act('set_group', { table, player: w, group: grp }); if (r && r.ok) toast(w + ' now plays ' + grp + '.'); return; }
+  if (a === 'reset_table' && !await askConfirm({ title: 'Clear ' + tname + '?', text: (g0 ? (at0.length === 2 ? at0.join(' and ') + '\u2019s game' : 'The game') + ' stops with no winner' : at0.join(' and ') + (at0.length === 1 ? ' leaves' : ' leave') + ' the table') + ', and the next people in the queue are called to ' + tname + '. Undo last change brings it back.', yes: 'Clear table', no: g0 ? 'Keep the game' : 'Leave it as it is' })) return;
+  const r = await act(a, { table });
+  if (!r || !r.ok) return;
+  const t = r.tables.find(x => x.id === table), g = t && t.game, turn = g && g.turn && t[g.turn] ? t[g.turn].name : '';
+  toast({ switch_turn: turn ? 'Turn switched: ' + turn + ' to shoot.' : 'Turn switched.', foul: turn ? 'Foul called. ' + turn + ' has ball in hand.' : 'Foul called.', undo: 'Last change on ' + tname + ' undone.', next_match: 'Next players called to ' + tname + '.', reset_table: tname + ' cleared.' }[a] || 'Done.');
+}
+// #tv = the bar TV on its own, full screen; #mobile = the player phone on its own. Neither shows the site header,
+// the test buttons (Reset!) or the footer, so the QR code and emails link to #mobile.
+function route() { const h0 = hashParts().view, h = h0 === 'tv' ? 'live' : h0 === 'mobile' ? 'phone' : h0; document.body.classList.toggle('kiosk', h0 === 'tv' || h0 === 'mobile' || h0 === 'camera'); document.body.classList.toggle('tvmode', h0 === 'tv'); if (h0 !== 'tv') document.body.classList.remove('tvfull'); S.view = VIEWS.includes(h) ? h : (window.innerWidth < 900 ? 'phone' : 'presenter'); render(); }
+
+async function sendShot(silent) {
+  const st = S.state, t = st && cameraTable(st), g = t && t.game;
+  if (!g) { if (!silent) toast('No camera game yet. Press Quick start, or join and check in at Table 1.'); return; }
+  if (g.status === 'review') { if (!silent) toast('Play is paused for the foul review. Decide on the phone.'); return; }
+  if (g.status !== 'live') { if (!silent) toast('This game is over.'); return; }
+  const ev = SCRIPT[g.shots.length];
+  if (!ev) { if (!silent) toast('The recorded game has no more shots.'); return; }
+  S.lastEv = ev; $('#evPre').textContent = JSON.stringify(ev, null, 2);
+  await act('shot', { table: t.id, event: JSON.stringify(ev) });
+}
+async function quickStart() {
+  const r = await act('join', { name: S.draft.name || 'Alex', email: S.draft.email, gameType: '8-ball', refOnly: true });
+  if (!r || !r.ok) return;
+  await act('skip'); const c = await act('checkin');
+  if (c && c.ok) { S.auto = true; toast('You\'re at Table 1 against the table holder. Shots play automatically.'); renderControls(S.state); }
+}
+
+document.addEventListener('click', async e => {
+  const a = e.target.closest('[data-act]'); if (!a || a.disabled) return;
+  const x = a.dataset.act;
+  if (x === 'openjoin') { S.joinOpen = true; if (S.state && S.state.me && S.state.me.status === 'left') S.ticket = null; S.sigs.clear(); render(); }
+  else if (x === 'closejoin') { S.joinOpen = false; S.sigs.clear(); render(); }
+  else if (x === 'leave') act('leave');
+  else if (x === 'checkin') act('checkin');
+  else if (x === 'flag') act('flag');
+  else if (x === 'vote') act('vote', { vote: a.dataset.v });
+  else if (x === 'confirm') act('confirm');
+  else if (x === 'report') act('report', { result: a.dataset.v });
+  else if (x === 'staff') act('staff', { table: a.dataset.t, decision: a.dataset.v });
+  else if (x === 'ack') { S.ack[a.dataset.g] = true; render(); }
+  else if (x === 'rejoin') { S.ticket = null; const r = await act('join', { name: S.draft.name || (S.state.me && S.state.me.name), email: S.draft.email, gameType: S.draft.gameType, refOnly: S.draft.refOnly }); if (r && r.ok) toast('Back on the board. Ticket ' + r.me.ticket); }
+  else if (x === 'done') { S.ticket = null; S.joinOpen = false; if (S.mode === 'live') saveTicket(null); S.sigs.clear(); act('state'); }
+  else if (x === 'ask') { const d = $('#askDlg'); if (d.showModal) { d.showModal(); setTimeout(() => $('#askInput').focus(), 50); } }
+  else if (x === 'askclose') $('#askDlg').close();
+  else if (x.startsWith('s-')) staffAct(x.slice(2));
+  else if (x === 'quick') quickStart();
+  else if (x === 'skip1') act('advance', { minutes: 1 });
+  else if (x === 'skipturn') act('skip');
+  else if (x === 'shot') sendShot();
+  else if (x === 'auto') { S.auto = !S.auto; renderControls(S.state); if (S.auto) sendShot(true); }
+  else if (x === 'reset') { S.auto = false; S.ack = {}; S.lastEv = null; S.ticket = null; S.joinOpen = false; S.sigs.clear(); S.tviews.forEach(v => { v.stop(); v.key = null; }); $('#evChip').textContent = 'No camera events yet'; await act('reset'); toast('Demo reset'); }
+  else if (x === 'showev') { const d = $('#evDlg'); if (d.showModal) d.showModal(); }
+  else if (x === 'settings') { $('#baseInput').value = S.base || 'http://localhost:5678/webhook'; $('#testRes').textContent = ''; const d = $('#settings'); if (d.showModal) d.showModal(); }
+  else if (x === 'use-demo') { S.mode = 'demo'; S.err = null; S.ticket = null; store.set('mode', 'demo'); $('#settings').close(); S.sigs.clear(); await act('state'); toast('Using demo data in this browser'); }
+  else if (x === 'connect') {
+    const v = $('#baseInput').value.trim(), res = $('#testRes');
+    try { new URL(v); } catch (err) { res.textContent = 'That isn\'t a full URL. It should start with http:// or https://'; return; }
+    const prev = { mode: S.mode, base: S.base };
+    S.mode = 'live'; S.base = v; res.textContent = 'Testing…';
+    const r = await api('state');
+    if (r) { store.set('mode', 'live'); store.set('base', v); S.ticket = loadTicket(); S.sigs.clear(); res.textContent = 'Connected.'; setTimeout(() => $('#settings').close(), 400); apply(r, true); toast('Connected to n8n'); }
+    else { res.textContent = 'Couldn\'t reach n8n (' + S.err + '). Check the workflow is active. A published demo page can\'t call other servers, so open ' + v.replace(/\/+$/, '') + '/pool-app instead.'; S.mode = prev.mode; S.base = prev.base; S.err = null; renderMode(); }
+  }
+});
+window.addEventListener('hashchange', route);
+window.addEventListener('resize', () => { if (S.view === 'live' && S.state) fitTV($('#v-live [data-tv]')); });   // the TV canvas follows the screen size
+$('#sTable').addEventListener('change', () => render());
+// ---------- ask the referee (AI agent in n8n: house rules + the live board) ----------
+async function askReferee(q) {
+  const log = $('#askLog'), add = (cls, txt) => { const p = document.createElement('p'); p.className = cls; p.textContent = txt; log.appendChild(p); log.scrollTop = log.scrollHeight; return p; };
+  add('q', q);
+  if (S.mode !== 'live') { add('a', 'The AI referee is switched off in this demo. On the venue\'s own page it answers from the house rules and the live board.'); return; }
+  const p = add('a wait', 'Thinking…');
+  try {
+    const u = new URL(S.base.replace(/\/+$/, '') + '/pool-ask');
+    u.searchParams.set('q', q); if (S.ticket) u.searchParams.set('ticket', S.ticket);
+    const r = await fetch(u, { cache: 'no-store' }); const j = await r.json();
+    p.className = 'a'; p.textContent = (j && (j.answer || j.error)) || 'No answer this time. Try again.';
+  } catch (e) { p.className = 'a'; p.textContent = 'The referee can\'t be reached right now.'; }
+  log.scrollTop = log.scrollHeight;
+}
+$('#askForm').addEventListener('submit', e => { e.preventDefault(); const i = $('#askInput'), q = i.value.trim(); if (!q) return; i.value = ''; askReferee(q.slice(0, 200)); });
+function makeQR() {
+  try {
+    if (!window.QRCode) return;
+    const box = document.createElement('div');
+    new QRCode(box, { text: location.href.split('#')[0] + '#mobile', width: 336, height: 336, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    const c = box.querySelector('canvas'); S.qr = c ? c.toDataURL() : '';
+  } catch (err) { S.qr = ''; }
+}
+makeQR();
+route();
+(async () => { apply(await api('state'), true); })();
+// Every call to n8n is one execution, and n8n Cloud plans cap them (Starter: 2,500 a month).
+// So a live page checks gently: every 4 s while something is happening (you're called or playing,
+// or the board changed in the last minute), every 20 s when nothing is going on, never while the tab is hidden.
+let lastSig = '', lastChange = Date.now();
+const boardSig = r => JSON.stringify([r.queue.map(q => q.ticket + q.status), r.tables.map(t => [t.status, t.game && t.game.status, t.game && t.game.shots && t.game.shots.length, t.champ && t.champ.name, t.challenger && [t.challenger.name, t.challenger.present]]), r.feed[0] && r.feed[0].at]);
+function pollDelay() {
+  if (S.mode !== 'live') return 1000;
+  const me = S.state && S.state.me;
+  return (me && ['called', 'playing'].includes(me.status)) || Date.now() - lastChange < 60000 ? 4000 : 20000;
+}
+async function poll() {
+  if (!document.hidden && !S.busy) {
+    const r = await api('state');
+    if (r) { const sig = boardSig(r); if (sig !== lastSig) { lastSig = sig; lastChange = Date.now(); } apply(r, true); }
+  }
+  setTimeout(poll, pollDelay());
+}
+setTimeout(poll, pollDelay());
+document.addEventListener('visibilitychange', async () => { if (!document.hidden && S.mode === 'live' && !S.busy) { lastChange = Date.now(); const r = await api('state'); if (r) apply(r, true); } });
+setInterval(() => { if (S.mode === 'live' && S.state && !document.hidden) render(); }, 1000);   // countdowns tick between checks
+setInterval(() => { if (S.auto && !S.busy) { const t = S.state && cameraTable(S.state), g = t && t.game; if (g && g.status === 'live') sendShot(true); else if (g && g.status === 'confirm') { S.auto = false; renderControls(S.state); } } }, 2600);
+
+</script>
+
+</body>
+</html>

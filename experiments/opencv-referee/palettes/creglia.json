@@ -1,0 +1,14 @@
+{
+ "note": "Ball set in the creglia drill videos (overhead camera, green cloth). Measured with --dump-at 7 and --dump-at 116.5 on creglia_drill08.mp4, where the row holds balls 1..15 left to right. 4 is pink, 5 purple, 7 orange; stripes look like colour plus black from above, so stripe vs solid is a guess (black share >= stripe_black) and the referee keeps tracked identities.",
+ "groups": {
+  "yellow": {"hue": 21, "sat": 220, "numbers": [1, 9]},
+  "blue":   {"hue": 105, "sat": 217, "numbers": [2, 10]},
+  "red":    {"hue": 174, "sat": 225, "numbers": [3, 11]},
+  "pink":   {"hue": 171, "sat": 148, "numbers": [4, 12]},
+  "purple": {"hue": 140, "sat": 114, "numbers": [5, 13]},
+  "green":  {"hue": 77, "sat": 210, "numbers": [6, 14]},
+  "orange": {"hue": 16, "sat": 210, "numbers": [7, 15]}
+ },
+ "cue": {"max_sat": 80, "min_val": 190},
+ "stripe_black": 0.03
+}
