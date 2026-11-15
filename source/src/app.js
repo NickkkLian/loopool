@@ -556,7 +556,7 @@ function renderControls(st) {
   $('[data-act="quick"]').disabled = !!(me && ['waiting', 'called', 'playing'].includes(me.status));
   const ab = $('#autoBtn'); ab.textContent = S.auto ? 'Pause auto-play' : 'Auto-play shots'; ab.classList.toggle('on', S.auto);
   if (st) $('#clock').textContent = fmtTime(st.now);
-  if (S.lastEv) $('#evChip').textContent = 'Shot ' + S.lastEv.shotNo + ' sent to n8n: potted [' + S.lastEv.potted.join(', ') + '], first contact ' + S.lastEv.firstContact + (S.lastEv.confidence.firstContact ? ' (' + Math.round(S.lastEv.confidence.firstContact * 100) + '% sure)' : '') + (S.lastEv.cueBallPotted ? ', scratch' : '');
+  if (S.lastEv) $('#evChip').textContent = 'Shot ' + S.lastEv.shotNo + (S.mode === 'live' ? ' sent to n8n' : ' (demo data, nothing sent)') + ': potted [' + S.lastEv.potted.join(', ') + '], first contact ' + S.lastEv.firstContact + (S.lastEv.confidence.firstContact ? ' (' + Math.round(S.lastEv.confidence.firstContact * 100) + '% sure)' : '') + (S.lastEv.cueBallPotted ? ', scratch' : '');
 }
 function render() {
   $$('.views a').forEach(a => { const on = a.dataset.view === S.view; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });

@@ -60,8 +60,6 @@ We didn't want to guess which vision model should referee, so we built a test in
 Models tested: Claude Haiku 5.5, Claude Sonnet 5.5, GPT-6 Luna, GPT-6.1 Terra, Gemini 3.1 Flash-Lite and Qwen3-VL Plus.
 <!-- accuracy:end -->
 
-The method, the test workflow, the labels, the scripts and every raw answer are in `reports/`, so anyone can rerun the test.
-
 ## Set it up (about 10 minutes)
 
 1. In n8n: **Create workflow → ⋯ → Import from file →** `pool-referee.n8n.json`.
@@ -106,7 +104,6 @@ For a demo without a table, choose **A recorded video (for demos)** under **Pict
 | `index.html` | The same app in one file, on demo data, for any browser. |
 | `source/` | App and workflow sources. `node source/build.js` rebuilds `index.html` and `pool-referee.n8n.json`. |
 | `API.md` | Endpoints, actions, the `/pool-score` format and the rules. |
-| `reports/` | The accuracy and cost report and everything needed to rerun it (`reports/ai-eval/`). |
 | `prototype/` | The first prototype: workflow, camera page, display page and API notes. |
 | `experiments/opencv-referee/` | An earlier referee built with classic computer vision (OpenCV), with its results on real footage. |
 | `screenshots/` | The screens. |
@@ -118,6 +115,6 @@ Built at the UBC eProjects × n8n LOOP Hackathon, November 2026.
 - **n8n Cloud**: webhooks, Code, Switch, Execute Workflow, Respond to Webhook, the AI Agent node, Anthropic image analysis, Gmail; state in workflow static data.
 - **AI models**, through n8n's built-in AI credits: Claude Haiku 5.5 (Anthropic) reads the shots and answers "Ask the referee". For the accuracy test we also ran Claude Sonnet 5.5 (Anthropic), GPT-6 Luna and GPT-6.1 Terra (OpenAI), Gemini 3.1 Flash-Lite (Google) and Qwen3-VL Plus (Alibaba Cloud).
 - **Gmail** for the queue emails, **Google Fonts** (Big Shoulders, Gochi Hand, Instrument Sans, IBM Plex Mono), **qrcodejs** from cdnjs for the QR code.
-- **Test footage**: public YouTube videos from The Billiard Room by Jason Creglia and Misha's Billiards, used to test the referee. A few still frames appear in the screenshots; the videos themselves are not included here (the list is in the report).
+- **Test footage**: public YouTube videos from The Billiard Room by Jason Creglia and Misha's Billiards, used to test the referee. A few still frames appear in the screenshots; the videos themselves are not included here.
 - **OpenCV** for the earlier computer-vision experiment.
 - AI coding assistants helped write and test the code.
