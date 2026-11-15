@@ -57,8 +57,6 @@
 .cam-view .cam-b:disabled{opacity:.4;cursor:not-allowed}
 .cam-view .cam-b.go{background:var(--c-blue);border-color:var(--c-blue);color:var(--c-blueink)}
 .cam-view .cam-b.on{border-color:var(--c-brass);color:var(--c-brass)}
-.cam-view .cam-sens{display:flex;align-items:center;gap:10px;margin-left:auto;font:500 11px var(--c-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c-dim)}
-.cam-view .cam-sens input{width:130px;accent-color:var(--c-blue)}
 .cam-view .cam-hint{font-size:13px;color:var(--c-dim);min-height:1.45em}
 .cam-view .cam-hint.err,.cam-view .cam-err{color:var(--c-foul)}
 .cam-view .cam-card{background:var(--c-board2);border:1px solid var(--c-line);border-radius:10px;padding:16px;display:grid;gap:12px}
@@ -90,7 +88,7 @@
 .cam-view .cam-item .mut{color:var(--c-dim)}
 .cam-view .cam-item .tip{color:var(--c-bluetext)}
 .cam-view .cam-none{color:var(--c-dim);font-size:14px}
-@media (max-width:900px){.cam-view{grid-template-columns:minmax(0,1fr);gap:18px}.cam-view .cam-sens{margin-left:0}.cam-view .cam-top h2{font-size:26px}.cam-view .cam-turn{font-size:32px}}
+@media (max-width:900px){.cam-view{grid-template-columns:minmax(0,1fr);gap:18px}.cam-view .cam-top h2{font-size:26px}.cam-view .cam-turn{font-size:32px}}
 `;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -118,13 +116,10 @@
       <div class="cam-empty"><b>No picture yet</b><span>Choose a source, then press Start.</span></div>
     </div>
     <div class="cam-btns">
-      <button class="cam-b" data-r="cropBtn" title="Mark where the table is in the picture, so nothing outside it counts as a shot">Mark the table</button>
-      <button class="cam-b" data-r="cropClear" title="Forget the marked table and watch the whole picture">Watch whole picture</button>
       <button class="cam-b" data-r="pauseBtn" disabled title="Stop counting shots for a while, for example while the balls are being set up">Pause</button>
       <button class="cam-b" data-r="manualBtn" disabled title="If the camera missed a shot, send the table as it is now to the referee">Send a missed shot</button>
-      <label class="cam-sens" title="Higher picks up softer shots. Lower ignores small movement.">Sensitivity <input type="range" data-r="sens" min="0.4" max="3" step="0.1" value="1"></label>
     </div>
-    <div class="cam-hint" data-r="hint">Put the camera above the table, press Start, then press "Mark the table". Keep the table still for 3 seconds while the camera gets ready.</div>
+    <div class="cam-hint" data-r="hint">Put the camera above the table so the table fills the picture, then press Start. Keep the table still for 3 seconds while the camera gets ready.</div>
   </section>
   <section class="cam-col">
     <div class="cam-card">
@@ -165,7 +160,6 @@
     R.conn.textContent = base() ? `${tableName()} · shots go to ${base().replace(/^https?:\/\//, '').replace(/\/webhook.*$/, '')}` : `${tableName()} · demo page. It sees shots but cannot score them. To score, open the camera from the venue's own link (it ends in /pool-app#camera).`;
     if (!base()) { R.now.textContent = 'A demo page has no live game to show.'; }
     R.src.value = store.get('src', 'camera') === 'file' ? 'file' : 'camera';
-    R.sens.value = String(store.get('sens', 1));
     let wantDev = store.get('dev', '');
     const syncSrc = () => { R.camRow.style.display = R.src.value === 'camera' ? '' : 'none'; R.fileRow.style.display = R.src.value === 'file' ? '' : 'none'; };
     syncSrc();
@@ -175,8 +169,9 @@
     R.dev.onchange = () => { wantDev = R.dev.value; store.set('dev', wantDev); };
 
     // ---------------- video + geometry ----------------
-    let crop = store.get('crop', null);
-    function srcRect() { const vw = v.videoWidth, vh = v.videoHeight, r = crop || { x: 0, y: 0, w: 1, h: 1 }; return [r.x * vw, r.y * vh, r.w * vw, r.h * vh]; }
+    // the camera is mounted once, looking straight down, and watches the whole picture at one fixed sensitivity
+    const SENS = 1;
+    function srcRect() { return [0, 0, v.videoWidth, v.videoHeight]; }
     const sc = document.createElement('canvas'), sctx = sc.getContext('2d', { willReadFrequently: true });
     function smallGray() {
       const [sx, sy, sw, sh] = srcRect(); const w = SMALL_W, h = Math.max(1, Math.round(SMALL_W * sh / sw));
@@ -221,7 +216,7 @@
       if (calib) {
         calib.samples.push(m);
         if (t - calib.start > CALIB_MS) {
-          const s = calib.samples.slice(2).sort((a, b) => a - b), p95 = s[Math.floor(s.length * 0.95)] || 0, sens = +R.sens.value;
+          const s = calib.samples.slice(2).sort((a, b) => a - b), p95 = s[Math.floor(s.length * 0.95)] || 0, sens = SENS;
           OFF = Math.max(0.0002, p95 * 2) / sens; ON = Math.max(0.0005, p95 * 6) / sens;   // low floor: a single rolling ball must trigger
           calib = null; still = { canvas: captureFull(), small: g, at: t }; setState('idle');
           R.hint.className = 'cam-hint';
@@ -364,16 +359,9 @@
     const pollTimer = setInterval(pollState, POLL_MS);
 
     // ---------------- overlay ----------------
-    let cropMode = false, pts = [];
     function draw(m) {
       const r = ov.getBoundingClientRect(); if (ov.width !== Math.round(r.width) || ov.height !== Math.round(r.height)) { ov.width = Math.round(r.width); ov.height = Math.round(r.height); }
       const W = ov.width, H = ov.height; octx.clearRect(0, 0, W, H);
-      if (crop) {
-        octx.fillStyle = 'rgba(0,0,0,.45)'; const x = crop.x * W, y = crop.y * H, w = crop.w * W, h = crop.h * H;
-        octx.fillRect(0, 0, W, y); octx.fillRect(0, y + h, W, H - y - h); octx.fillRect(0, y, x, h); octx.fillRect(x + w, y, W - x - w, h);
-        octx.strokeStyle = state === 'motion' ? COL.brass : COL.good; octx.lineWidth = 2; octx.strokeRect(x, y, w, h);
-      }
-      pts.forEach(p => { octx.fillStyle = COL.good; octx.beginPath(); octx.arc(p.x * W, p.y * H, 6, 0, 7); octx.fill(); });
       if (m !== undefined && running) {
         const bw = Math.min(260, W - 24), lvl = Math.min(1, m / (ON * 2.5));
         octx.fillStyle = 'rgba(0,0,0,.6)'; octx.fillRect(12, H - 30, bw, 14);
@@ -381,20 +369,7 @@
         octx.fillStyle = '#fff'; octx.fillRect(12 + bw * (1 / 2.5), H - 33, 2, 20);
         R.meter.textContent = `movement ${(m * 100).toFixed(2)}%`;
       }
-      if (cropMode) { octx.fillStyle = 'rgba(0,0,0,.6)'; octx.fillRect(0, 0, W, 34); octx.fillStyle = '#fff'; octx.font = '14px ' + fontSans; octx.fillText(pts.length ? 'Now tap the bottom-right corner of the table' : 'Tap the top-left corner of the table (outside the pockets)', 12, 22); }
     }
-    ov.onclick = e => {
-      if (!cropMode) return;
-      const r = ov.getBoundingClientRect(); pts.push({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
-      if (pts.length === 2) {
-        const [a, b] = pts; const c = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
-        crop = c.w > 0.1 && c.h > 0.1 ? c : null; store.set('crop', crop); cropMode = false; pts = []; R.cropBtn.classList.remove('on'); resetRef();
-      }
-      draw();
-    };
-    R.cropBtn.onclick = () => { if (!v.videoWidth) { R.setupErr.textContent = 'Press Start first, so there is a picture to mark the table on.'; return; } R.setupErr.textContent = ''; cropMode = true; pts = []; R.cropBtn.classList.add('on'); draw(); };
-    R.cropClear.onclick = () => { crop = null; store.set('crop', null); resetRef(); draw(); };
-    R.sens.oninput = () => { store.set('sens', +R.sens.value); resetRef(); };
     const onResize = () => draw();
     window.addEventListener('resize', onResize);
 

@@ -46,7 +46,7 @@ email buttons      ──► /pool-act   (check in, vote on a foul, confirm a re
 "Ask the referee"  ──► /pool-ask   (AI agent with the house rules and the live board)
 ```
 
-The whole backend is one workflow (`pool-referee.n8n.json`, 46 nodes) that also serves the app. The camera page detects shots in the browser (frame differencing with a noise calibration and a table crop), so n8n only receives the shots that matter. The AI only describes what it sees; the score and every rule are plain code, so the same shot always gets the same ruling. State is kept in the workflow's static data, which n8n saves when a run ends, so anything slow runs apart from the state: the 15-second AI call hands its result to a short `/pool-apply` run, and emails go out from a background sub-run.
+The whole backend is one workflow (`pool-referee.n8n.json`, 46 nodes) that also serves the app. The camera page detects shots in the browser (frame differencing with a noise calibration), so n8n only receives the shots that matter. The AI only describes what it sees; the score and every rule are plain code, so the same shot always gets the same ruling. State is kept in the workflow's static data, which n8n saves when a run ends, so anything slow runs apart from the state: the 15-second AI call hands its result to a short `/pool-apply` run, and emails go out from a background sub-run.
 
 ## How we chose the AI model
 
@@ -71,7 +71,7 @@ Models tested: Claude Haiku 5.5, Claude Sonnet 5.5, GPT-6 Luna, GPT-6.1 Terra, G
 
 1. Mount a phone or webcam above the table, looking straight down, with the table filling the picture. Open `#camera` (the page is served over https, so phones allow the camera).
 2. Pick the table's **ball colours** (the usual set, or a set where the 4 is pink, the 5 purple and the 7 orange). In our test this one setting made the calls clearly more accurate.
-3. Press **Start** and keep the table still for 3 seconds while it measures camera noise, then click the top-left and bottom-right corners of the table.
+3. Press **Start** and keep the table still for 3 seconds while it measures camera noise. The camera watches the whole picture, so mount it once with the table filling the frame.
 4. Play. A shot is sent once the balls have been still for 1.5 seconds; someone leaning over the table without moving a ball is ignored.
 
 For a demo without a table, choose **A recorded video (for demos)** under **Picture from**, and the page treats the video as a live feed.
