@@ -108,9 +108,12 @@ For a demo without a table, choose **A recorded video (for demos)** under **Pict
 | `experiments/opencv-referee/` | An earlier referee built with classic computer vision (OpenCV), with its results on real footage. |
 | `screenshots/` | The screens. |
 
+## Team
+
+Loopool was built by Nick Lian, Nic Saunders, Ava Soh and Ibrahim Tekkanat at the UBC eProjects × n8n LOOP Hackathon, November 2026.
+
 ## Built with, and outside services
 
-Built at the UBC eProjects × n8n LOOP Hackathon, November 2026.
 
 - **n8n Cloud**: webhooks, Code, Switch, Execute Workflow, Respond to Webhook, the AI Agent node, Anthropic image analysis, Gmail; state in workflow static data.
 - **AI models**, through n8n's built-in AI credits: Claude Haiku 5.5 (Anthropic) reads the shots and answers "Ask the referee". For the accuracy test we also ran Claude Sonnet 5.5 (Anthropic), GPT-6 Luna and GPT-6.1 Terra (OpenAI), Gemini 3.1 Flash-Lite (Google) and Qwen3-VL Plus (Alibaba Cloud).
