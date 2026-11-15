@@ -32,7 +32,7 @@ const codeOf = f => fnBody(f).replace('/*BASE*/', BASE.replace(/\n/g, '\n'));
 const HOUSE_RULES = [
   '- Winner stays on. A table holder can win at most ' + 3 + ' games in a row while people are waiting, then the table goes to the next players.',
   '- When you are called, you have 3 minutes to check in at the table (on your phone or from the email), or the next name on the board is called.',
-  '- Table 1 has the camera referee and its games are rated (Elo, K = 32). Tables 2 to 4 have no camera: players report the winner and both confirm.',
+  '- Table 1 has the camera referee and its games are rated (Elo, K = 32). Tables 2 to 4 are not rated. A game there is called by the camera referee only if staff have a camera running over that table when it starts; otherwise players report the winner and both confirm.',
   '- The camera referee (an AI reading photos of each shot) calls a foul on its own when it is at least 60% sure. Below that, play pauses and both players vote on their phones. If they disagree, staff decide on the counter tablet. Staff can also undo any call.',
   '- 8-ball, simplified: the table is open until someone legally pots a ball, which sets solids (1-7) or stripes (9-15). On each shot you must hit a ball of your own group first, or the 8 once your group is cleared. On the break any ball may be hit first.',
   '- Fouls: the cue ball goes in a pocket (scratch), the cue ball hits nothing, or the wrong ball is hit first. After a foul the other player has ball in hand. Potting the 8 before your group is cleared, or on a foul, loses the game.',

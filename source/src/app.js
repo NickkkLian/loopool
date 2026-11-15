@@ -299,7 +299,7 @@ const PHONE = {
     let lede = 'Join the queue and we\'ll tell you when a table opens.';
     if (ref && ref.game && ref.game.left) lede += ' Table 1 is next in about ' + ref.game.left + ' minute' + (ref.game.left > 1 ? 's' : '') + '.';
     else if (ref && ref.game && ref.game.mode === 'camera') lede += ' Table 1 has a live game on camera.';
-    const rows = st.tables.map((t, i) => `<div class="row"><span class="n${t.ref ? ' ref' : ''}">${i + 1}</span><div style="min-width:0"><b>${t.game || t.status === 'checkin' ? esc(t.champ.name) + ' vs ' + esc(t.challenger ? t.challenger.name : '…') : t.champ ? esc(t.champ.name) + ' needs a challenger' : 'Free'}</b><small>${t.gameType}${t.ref ? ' · camera referee · rated' : ''}</small></div><span class="t">${t.game ? t.game.minutes + ' min' : t.status === 'checkin' ? 'starting' : ''}</span></div>`).join('');
+    const rows = st.tables.map((t, i) => `<div class="row"><span class="n${t.ref ? ' ref' : ''}">${i + 1}</span><div style="min-width:0"><b>${t.game || t.status === 'checkin' ? esc(t.champ.name) + ' vs ' + esc(t.challenger ? t.challenger.name : '…') : t.champ ? esc(t.champ.name) + ' needs a challenger' : 'Free'}</b><small>${t.gameType}${t.ref ? ' · camera referee · rated' : t.camera ? ' · camera referee' : ''}</small></div><span class="t">${t.game ? t.game.minutes + ' min' : t.status === 'checkin' ? 'starting' : ''}</span></div>`).join('');
     return `${topBar(`<a href="${document.body.classList.contains('kiosk') ? '#tv' : '#live'}" style="display:flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:500;text-decoration:none">${ICON.live}Watch Table 1</a>`)}
       <div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">${h1}</h1><p class="lede">${lede}</p></div>
       ${me && me.status === 'left' ? '<p class="lede">You left the queue. Put your name back on any time.</p>' : ''}
@@ -528,7 +528,7 @@ function renderVenue(el, st) {
     if (g && g.status === 'review' && g.review) extra = g.review.staff
       ? `<p style="font-size:13.5px">Players disagree on shot ${g.review.shotNo}: ${esc(g.review.foul.text)}.</p><div class="decide"><button class="uphold" data-act="staff" data-t="${t.id}" data-v="uphold">Foul</button><button data-act="staff" data-t="${t.id}" data-v="overrule">No foul</button></div>`
       : `<p class="dim" style="font-size:13.5px">Players are reviewing shot ${g.review.shotNo}.</p>`;
-    const meta = [t.gameType, t.ref ? 'camera referee' : '', g ? (g.minutes ? g.minutes + ' min' : 'just started') : '', g && g.mode === 'camera' && g.shots.length ? 'shot ' + g.shots.length : ''].filter(Boolean).join(' · ');
+    const meta = [t.gameType, t.ref || t.camera ? 'camera referee' : '', g ? (g.minutes ? g.minutes + ' min' : 'just started') : '', g && g.mode === 'camera' && g.shots.length ? 'shot ' + g.shots.length : ''].filter(Boolean).join(' · ');
     return `<div class="tcard${t.status === 'staff' ? ' staff' : ''}"><div class="hd"><span class="sign">${esc(t.name)}</span><span class="st ${cls}">${txt}</span></div><span class="meta">${esc(meta)}</span><div class="felt"></div>${seat(t, 'champ')}${seat(t, 'challenger')}${extra}</div>`;
   }).join('');
   // Red is kept for what staff must act on: a foul the players disagree about, until staff decide it. Everything else is a plain record.
@@ -569,7 +569,7 @@ function render() {
   if (v === 'presenter' || v === 'live') renderTV($('#v-' + v + ' [data-tv]'), st, v);
   if (v === 'presenter' || v === 'venue') renderVenue($('#v-' + v + ' [data-venue]'), st);
   if (v === 'venue') renderStaff(st);
-  if (v === 'camera') { const el = $('#v-camera [data-camera]'); if (el && !el.dataset.mounted && window.CameraView) { el.dataset.mounted = '1'; window.CameraView.mount(el, { base: S.mode === 'live' ? S.base : '', table: 'T1' }); } }
+  if (v === 'camera') { const el = $('#v-camera [data-camera]'); if (el && !el.dataset.mounted && window.CameraView) { el.dataset.mounted = '1'; window.CameraView.mount(el, { base: S.mode === 'live' ? S.base : '', table: 'T1', tables: () => ((S.state && S.state.tables) || []).map(t => ({ id: t.id, name: t.name, ref: t.ref })) }); } }
 }
 // ---------- staff tools on the counter tablet (start match, switch turn, foul, undo, next match, winner, group, clear) ----------
 function renderStaff(st) {

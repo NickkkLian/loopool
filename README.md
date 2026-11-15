@@ -74,6 +74,8 @@ Models tested: Claude Haiku 5.5, Claude Sonnet 5.5, GPT-6 Luna, GPT-6.1 Terra, G
 3. Press **Start** and keep the table still for 3 seconds while it gets ready. The camera watches the whole picture, so mount it once with the table filling the frame.
 4. Play. A shot is sent once the balls have been still for 1.5 seconds; someone leaning over the table without moving a ball is ignored.
 
+**Several tables from one device:** press **Add table** at the top of the camera page to give another table its own tab (for example a laptop with a USB webcam over each table). Each tab has its own camera, ball colours and shot log, and keeps watching while you look at another tab; the dot on each tab shows whether that table is watching, mid-shot or paused. On Tables 2-4 the camera referees every game that starts while its camera is running (those games are not rated; only Table 1 is). A game that was already going when the camera started is scored as practice shots.
+
 For a demo without a table, choose **A recorded video (for demos)** under **Picture from**, and the page treats the video as a live feed.
 
 ## Rules

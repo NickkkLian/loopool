@@ -549,6 +549,11 @@ const RULES = { maxWins: 3, checkinSec: 180, simCheckinSec: 40, simVoteSec: 3, s
 const BALLS = gt => Array.from({ length: gt === '9-ball' ? 9 : gt === '10-ball' ? 10 : 15 }, (_, i) => i + 1);
 const TABLE = { W: 1000, H: 500, R: 11, pockets: [[0, 0], [500, -6], [1000, 0], [0, 500], [500, 506], [1000, 500]] };
 const MIN = 60000;
+// A table has a camera while a camera page is running for it: the page names its tables on every state poll
+// (?cams=T1,T2), so a camera counts as gone once it has not reported for CAM_TTL. Table 1 (t.ref) always has one.
+const CAM_TTL = MIN, CAM_SAVE_EVERY = 20000;
+function camOn(t, now) { return !!t.camAt && now - t.camAt < CAM_TTL; }
+function refereed(t, now) { return !!t.ref || camOn(t, now); }
 function groupOf(b) { b = Number(b); return b === 8 ? 'eight' : b < 8 ? 'solids' : 'stripes'; }
 function otherSide(s) { return s === 'champ' ? 'challenger' : 'champ'; }
 function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -632,7 +637,7 @@ function ratingChange(S, g, W, L, loserLeft) {
 
 function startGame(S, t, now) {
   const real = t.champ.real || t.challenger.real || t.champ.staff || t.challenger.staff;   // staff-started matches are played for real too
-  const mode = t.ref && real ? 'camera' : real ? 'manual' : 'sim';
+  const mode = refereed(t, now) && real ? 'camera' : real ? 'manual' : 'sim';   // any table with a running camera is refereed; only Table 1 is rated
   const id = 'g' + (++S.seq);
   const g = { id, mode, rated: t.ref, startedAt: now, status: 'live' };
   if (mode === 'sim') {
@@ -877,7 +882,7 @@ function publicState(S, now, ticket) {
     if (g) status = g.status === 'review' ? (g.review && g.review.staff ? 'staff' : 'review') : g.status === 'confirm' ? 'confirm' : 'playing';
     else if (t.champ && t.challenger) status = 'checkin';
     else if (t.champ) status = 'waiting';
-    const pub = { id: t.id, name: t.name, ref: t.ref, gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
+    const pub = { id: t.id, name: t.name, ref: t.ref, camera: refereed(t, now), gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
     if (g) {
       pub.game = { id: g.id, mode: g.mode, rated: g.rated, startedAt: g.startedAt, minutes: Math.max(0, Math.round((now - g.startedAt) / MIN)), left: g.mode === 'sim' ? Math.max(1, Math.round((g.endsAt - now) / MIN)) : null, status: g.status };
       if (g.mode === 'camera') Object.assign(pub.game, { gameType: g.gameType || t.gameType, lastReason: g.lastReason || '', turn: g.turn, groups: g.groups, onTable: g.onTable, positions: g.positions, lastShot: g.lastShot, shots: g.shots.slice(-14), review: g.review, ballInHand: g.ballInHand, winner: g.winner, winReason: g.winReason || '', confirm: g.confirm });
@@ -947,6 +952,12 @@ function handle(S, action, p, realNow) {
   const finBefore = S.finished || 0;
   if (p.base) S.base = String(p.base).slice(0, 200);
   if (p.k != null && p.k !== '') { const kq = p.ticket ? findTicket(S, p.ticket) : null; if (!kq || !kq.key || kq.key !== String(p.k)) return fail('This link doesn\'t match a ticket.', 403); }
+  if (p.cams) {                                          // a camera page says which tables it is watching (before settle, so a game starting now is refereed)
+    String(p.cams).toUpperCase().split(',').slice(0, 20).forEach(id => {
+      const t = S.tables.find(x => x.id === id.trim());
+      if (t && !(t.camAt && now() - t.camAt < CAM_SAVE_EVERY)) t.camAt = now();   // saved at most every 20 s per table
+    });
+  }
   settle(S, now(), notes);
   const q = p.ticket ? findTicket(S, p.ticket) : null;
   switch (action) {
@@ -1000,7 +1011,8 @@ function handle(S, action, p, realNow) {
       const t = S.tables.find(x => x.id === String(p.table || 'T1').toUpperCase());
       let sh = p.shot; if (typeof sh === 'string') { try { sh = JSON.parse(sh); } catch (e) { sh = null; } }
       if (!t) return fail('Unknown table.');
-      if (p.hasFrame) t.frameAt = now();                 // the new photo shows on the TV even if the AI reading failed
+      t.camAt = now();                                   // a shot from this table's camera: it is watching
+      if (p.hasFrame) t.frameAt = now();                // the new photo shows on the TV even if the AI reading failed
       if (!sh || sh.ok === false) { const r = fail((sh && sh.error) || 'The AI could not read this shot.'); r.response = Object.assign(publicState(S, now(), p.ticket), { ok: false, error: (sh && sh.error) || 'The AI could not read this shot.' }); return r; }
       const g = t.game;
       if (g && g.mode === 'camera' && g.status === 'review') return fail('Waiting for the foul review on shot ' + g.review.shotNo + '.', 409);
@@ -1119,7 +1131,7 @@ function handle(S, action, p, realNow) {
         settle(S, now(), notes);
         break;
       }
-      if (!live) return fail(!g ? 'No game is being played on ' + t.name + '.' : g.mode !== 'camera' ? (t.ref ? 'The camera is not following this game on ' + t.name : t.name + ' has no camera') + ', so staff can only declare the winner or clear the table.' : g.status === 'review' ? 'Play on ' + t.name + ' is paused for a foul review. Decide the review first.' : 'The game on ' + t.name + ' is over. The players are confirming the result.');
+      if (!live) return fail(!g ? 'No game is being played on ' + t.name + '.' : g.mode !== 'camera' ? (refereed(t, now()) ? 'The camera is not following this game on ' + t.name : t.name + ' has no camera') + ', so staff can only declare the winner or clear the table.' : g.status === 'review' ? 'Play on ' + t.name + ' is paused for a foul review. Decide the review first.' : 'The game on ' + t.name + ' is over. The players are confirming the result.');
       pushUndo(S, t);
       if (action === 'switch_turn') { g.turn = otherSide(g.turn); g.ballInHand = false; g.lastReason = 'Turn switched by staff: ' + t[g.turn].name + ' to shoot'; log(S, now(), 'table', t.name + ' · ' + g.lastReason); }
       else if (action === 'foul') { g.turn = otherSide(g.turn); g.ballInHand = true; g.lastReason = 'Foul called by staff: ball in hand for ' + t[g.turn].name; log(S, now(), 'foul', t.name + ' · ' + g.lastReason); }
@@ -1233,8 +1245,10 @@ function buildScript() {
 // Changes from the original (deliberate): frames are FRAME_LONG_SIDE px (was 1568), MID_FRAMES mid frames are sent
 // (was 6), one JPEG quality for every frame, the "Table now" panel polls our own GET {base}/pool?action=state, and
 // the page chrome is restyled with the app's own tokens. No external libraries. localStorage is optional.
+// One page can run several tables at once (say a laptop with a USB webcam over each table): each table gets its own tab
+// with its own picture source, detection, ball colours and shot log. Tables are added and removed on the page.
 //
-//   CameraView.mount(el, { base: 'https://x.app.n8n.cloud/webhook', table: 'T1' })  ->  { destroy() }
+//   CameraView.mount(el, { base: 'https://x.app.n8n.cloud/webhook', table: 'T1', tables: () => [{ id, name, ref }] })  ->  { destroy() }
 (function () {
   'use strict';
 
@@ -1255,8 +1269,19 @@ function buildScript() {
   --c-line:var(--line,#33413b);--c-line2:var(--line-2,#3a4842);--c-line3:var(--line-3,#5b6a63);--c-chalk:var(--chalk,#ecefe9);--c-dim:var(--dim,#a4afa8);--c-faint:var(--faint,#8e9b94);
   --c-brass:var(--brass,#e5ad3e);--c-blue:var(--blue,#5b9be8);--c-blueink:var(--blue-ink,#0e1714);--c-bluetext:var(--blue-text,#8fbcf2);--c-foul:var(--foul,#ff7a6b);--c-good:var(--good,#67d394);
   --c-sign:var(--f-sign,"Big Shoulders","Arial Narrow",sans-serif);--c-body:var(--f-body,system-ui,-apple-system,"Segoe UI",sans-serif);--c-mono:var(--f-mono,ui-monospace,Menlo,monospace);
-  color:var(--c-chalk);font:15px/1.45 var(--c-body);display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,1fr);gap:24px;align-items:start}
+  color:var(--c-chalk);font:15px/1.45 var(--c-body);display:grid;gap:18px}
 .cam-view *{box-sizing:border-box}
+.cam-view .cam-unit{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,1fr);gap:24px;align-items:start}
+.cam-view .cam-unit[hidden]{display:none}
+.cam-view .cam-tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--c-line)}
+.cam-view .cam-tab{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:6px;border:1px solid var(--c-line2);background:transparent;color:var(--c-dim);font:600 13.5px var(--c-body);cursor:pointer}
+.cam-view .cam-tab:hover{border-color:var(--c-line3)}
+.cam-view .cam-tab[aria-selected=true]{border-color:var(--c-brass);background:var(--c-board2);color:var(--c-chalk)}
+.cam-view .cam-tab i{width:8px;height:8px;border-radius:50%;background:var(--c-faint)}
+.cam-view .cam-tab.watching i{background:var(--c-good)}.cam-view .cam-tab.motion i{background:var(--c-brass)}.cam-view .cam-tab.paused i{background:var(--c-foul)}.cam-view .cam-tab.calibrating i{background:var(--c-blue)}
+.cam-view .cam-tab small{font:400 11.5px var(--c-mono);color:var(--c-faint);letter-spacing:.04em}
+.cam-view .cam-add{display:flex;gap:8px;align-items:center;margin-left:auto}
+.cam-view .cam-add select{width:auto;min-width:150px}
 .cam-view .cam-col{display:grid;gap:18px;min-width:0}
 .cam-view .cam-label{font:500 11px/1.3 var(--c-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c-dim)}
 .cam-view .cam-sign{font-family:var(--c-sign);font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:.95}
@@ -1319,7 +1344,7 @@ function buildScript() {
 .cam-view .cam-item .mut{color:var(--c-dim)}
 .cam-view .cam-item .tip{color:var(--c-bluetext)}
 .cam-view .cam-none{color:var(--c-dim);font-size:14px}
-@media (max-width:900px){.cam-view{grid-template-columns:minmax(0,1fr);gap:18px}.cam-view .cam-top h2{font-size:26px}.cam-view .cam-turn{font-size:32px}}
+@media (max-width:900px){.cam-view .cam-unit{grid-template-columns:minmax(0,1fr);gap:18px}.cam-view .cam-add{margin-left:0}.cam-view .cam-top h2{font-size:26px}.cam-view .cam-turn{font-size:32px}}
 `;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1328,19 +1353,20 @@ function buildScript() {
     set(k, v) { try { localStorage.setItem('poolcam.' + k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } },
   };
 
-  function mount(el, opts) {
-    opts = opts || {};
-    const tableId = () => String(opts.table || 'T1').trim().toUpperCase();
-    const base = () => String(opts.base || '').trim().replace(/\/+$/, '').replace(/\/(pool-[a-z]+)$/, '');
+  const SHIELD = '<svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg>';
+  const PILL_CLASS = { idle: 'watching', motion: 'motion', paused: 'paused', calibrating: 'calibrating' };
 
-    if (!document.getElementById('cam-view-style')) {
-      const st = document.createElement('style'); st.id = 'cam-view-style'; st.textContent = CSS; document.head.appendChild(st);
-    }
-    el.innerHTML = `
-<div class="cam-view">
-  <div class="cam-top"><h2 class="cam-sign">Table camera</h2><span class="cam-pill" data-r="pill" role="status">Stopped</span><span class="cam-meter" data-r="meter"></span>
-    <div class="cam-brand"><a href="#presenter">All screens</a><span><svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 2.5 24 21.5H2Z" fill="none" stroke="#e5ad3e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="13" cy="15" r="3.4" fill="#ecefe9"/></svg>LOOPOOL</span></div></div>
+  // One table's camera: its own picture source, detection loop, ball colours and shot log.
+  //   ctx = { id, base(), name(id), isRef(id), poll(), onState(state), onRemove(), canRemove() }
+  function createUnit(host, ctx) {
+    const tableId = () => ctx.id;
+    const base = ctx.base;
+    const key = k => ctx.id + '.' + k;   // settings are kept per table (older single-table keys are the defaults)
+    const unit = document.createElement('div');
+    unit.className = 'cam-unit'; unit.dataset.table = ctx.id;
+    unit.innerHTML = `
   <section class="cam-col">
+    <div class="cam-head"><h2 class="cam-sign" data-r="title"></h2><span class="cam-pill" data-r="pill" role="status">Stopped</span><span class="cam-meter" data-r="meter"></span></div>
     <div class="cam-stage" data-r="stage">
       <video data-r="v" playsinline muted></video>
       <canvas class="cam-ov" data-r="ov"></canvas>
@@ -1364,7 +1390,7 @@ function buildScript() {
         <input type="file" data-r="file" accept="video/*" aria-label="Video file"></div>
       <div class="cam-field"><span class="cam-label">Ball colours</span>
         <select data-r="balls" aria-label="Ball colours" title="The AI names balls by colour. Telling it this table's set makes it name the right ball far more often."><option value="standard">Usual colours (4 purple, 5 orange, 7 maroon)</option><option value="pink">4 pink, 5 purple, 7 orange</option></select></div>
-      <div class="cam-btns"><button class="cam-b go" data-r="startBtn">Start</button><button class="cam-b" data-r="stopBtn" disabled>Stop</button></div>
+      <div class="cam-btns"><button class="cam-b go" data-r="startBtn">Start</button><button class="cam-b" data-r="stopBtn" disabled>Stop</button><button class="cam-b" data-r="removeBtn" style="margin-left:auto" title="Stop this camera and take the table off this page">Remove table</button></div>
       <div class="cam-hint err" data-r="setupErr"></div>
     </div>
     <div class="cam-card">
@@ -1375,29 +1401,35 @@ function buildScript() {
       <h3 class="cam-sign">Shots</h3>
       <div class="cam-log" data-r="log"><div class="cam-none" data-r="nolog">No shots yet. Each shot the camera sees is listed here with its score.</div></div>
     </div>
-  </section>
-</div>`;
-    const root = el.querySelector('.cam-view');
+  </section>`;
+    host.appendChild(unit);
+    const root = unit;
     const R = {}; root.querySelectorAll('[data-r]').forEach(n => { R[n.dataset.r] = n; });
     const v = R.v, ov = R.ov, octx = ov.getContext('2d');
     const cs = getComputedStyle(root);
     const tok = (n, d) => (cs.getPropertyValue(n).trim() || d);
     const COL = { good: tok('--c-good', '#67d394'), brass: tok('--c-brass', '#e5ad3e'), foul: tok('--c-foul', '#ff7a6b'), lime: '#b6e36b' };
-    const fontSans = tok('--c-body', 'sans-serif');
 
-    // ---------------- settings (remembered when storage works) ----------------
-    const tableName = () => tableId().replace(/^T(\d+)$/, 'Table $1');
+    // ---------------- settings (remembered per table when storage works) ----------------
+    const tableName = () => ctx.name(tableId());
     const NO_VENUE = 'Shot seen, but not scored: this demo page is not connected to a venue.';
-    R.conn.textContent = base() ? `${tableName()} · shots go to ${base().replace(/^https?:\/\//, '').replace(/\/webhook.*$/, '')}` : `${tableName()} · demo page. It sees shots but cannot score them. To score, open the camera from the venue's own link (it ends in /pool-app#camera).`;
+    function renderConn() {
+      R.title.textContent = tableName();
+      const noRef = ctx.isRef(tableId()) === false ? ' While this camera is running, games that start on this table are refereed from its shots (they are not rated: only Table 1 is).' : '';
+      R.conn.textContent = (base() ? `${tableName()} · shots go to ${base().replace(/^https?:\/\//, '').replace(/\/webhook.*$/, '')}.` : `${tableName()} · demo page. It sees shots but cannot score them. To score, open the camera from the venue's own link (it ends in /pool-app#camera).`) + noRef;
+      R.removeBtn.disabled = !ctx.canRemove();
+    }
+    renderConn();
     if (!base()) { R.now.textContent = 'A demo page has no live game to show.'; }
-    R.src.value = store.get('src', 'camera') === 'file' ? 'file' : 'camera';
-    let wantDev = store.get('dev', '');
+    R.src.value = store.get(key('src'), store.get('src', 'camera')) === 'file' ? 'file' : 'camera';
+    let wantDev = store.get(key('dev'), ctx.id === 'T1' ? store.get('dev', '') : '');
     const syncSrc = () => { R.camRow.style.display = R.src.value === 'camera' ? '' : 'none'; R.fileRow.style.display = R.src.value === 'file' ? '' : 'none'; };
     syncSrc();
-    R.src.onchange = () => { store.set('src', R.src.value); syncSrc(); };
-    R.balls.value = store.get('balls', 'standard') === 'pink' ? 'pink' : 'standard';
-    R.balls.onchange = () => store.set('balls', R.balls.value);
-    R.dev.onchange = () => { wantDev = R.dev.value; store.set('dev', wantDev); };
+    R.src.onchange = () => { store.set(key('src'), R.src.value); syncSrc(); };
+    R.balls.value = store.get(key('balls'), store.get('balls', 'standard')) === 'pink' ? 'pink' : 'standard';
+    R.balls.onchange = () => store.set(key('balls'), R.balls.value);
+    R.dev.onchange = () => { wantDev = R.dev.value; store.set(key('dev'), wantDev); };
+    R.removeBtn.onclick = () => ctx.onRemove();
 
     // ---------------- video + geometry ----------------
     // the camera is mounted once, looking straight down, and watches the whole picture with fixed levels: a shot starts when
@@ -1437,7 +1469,7 @@ function buildScript() {
     let before = null, calib = null, ON = 0.004, OFF = 0.0008, lastM = 0, lastFrameT = -1;
 
     const PILL = { stopped: 'Stopped', calibrating: 'Getting ready…', idle: 'Watching', motion: 'Shot in progress', paused: 'Paused' };
-    function setState(s) { state = s; R.pill.textContent = PILL[s] || s; R.pill.className = 'cam-pill ' + ({ idle: 'watching', motion: 'motion', paused: 'paused', calibrating: 'calibrating' }[s] || ''); }
+    function setState(s) { state = s; R.pill.textContent = PILL[s] || s; R.pill.className = 'cam-pill ' + (PILL_CLASS[s] || ''); ctx.onState(s, PILL[s] || s); }
     function resetRef() { prev = null; still = null; onCount = 0; quietSince = null; if (running && !paused) startCalibration(); }
     function startCalibration() { calib = { start: performance.now(), samples: [] }; setState('calibrating'); }
 
@@ -1515,7 +1547,7 @@ function buildScript() {
         try { d = JSON.parse(raw); } catch (e) { throw new Error(`Not scored: the venue's server gave an answer the camera could not read (code ${res.status}). Try the next shot; if it keeps happening, tell whoever runs the n8n workflow.`); }
         if (!d.ok) throw new Error('Not scored: ' + (d.error || d.message || 'the AI referee could not read this shot.') + (d.raw ? ' · AI said: ' + String(d.raw).slice(0, 160) : ''));
         updateLog(p.li, { status: 'done', data: d, secs: Math.round((Date.now() - t0) / 1000) });
-        pollState();
+        ctx.poll();
       } catch (e) {
         updateLog(p.li, { status: 'error', text: /fetch|load failed|network/i.test(e.message) ? 'Not scored: the venue\'s server did not answer. Check the internet connection and that the n8n workflow is switched on.' : e.message });
       } finally { busy = false; pump(); }
@@ -1556,6 +1588,11 @@ function buildScript() {
       if (!t) { R.now.className = 'cam-none'; R.now.textContent = `${tableName()} is not set up at this venue.`; return; }
       const g = t.game;
       if (!g) { R.now.className = 'cam-none'; R.now.textContent = 'No game on this table right now. Staff can start one on the counter tablet.'; return; }
+      if (g.mode !== 'camera') {
+        R.now.className = 'cam-none';
+        R.now.textContent = `${t.champ ? t.champ.name : 'Player 1'} vs ${t.challenger ? t.challenger.name : 'Player 2'}. This game started before the camera was on, so its shots are scored as practice. The next game on this table is refereed.`;
+        return;
+      }
       R.now.className = '';
       const seat = s => (t[s] && t[s].name) || (s === 'champ' ? 'Player 1' : 'Player 2');
       const left = s => {
@@ -1580,17 +1617,6 @@ function buildScript() {
       }
       R.now.innerHTML = `${head}${body}<div class="cam-players" style="margin-top:12px">${players}</div>`;
     }
-    let pollBusy = false;
-    async function pollState() {
-      if (destroyed || !base() || pollBusy) return;
-      pollBusy = true;
-      try {
-        const r = await fetch(`${base()}/pool?action=state`, { cache: 'no-store' }); const d = await r.json();
-        if (d && d.ok !== false && d.tables) renderNow(d);
-      } catch (e) { /* keep the last picture of the table */ }
-      pollBusy = false;
-    }
-    const pollTimer = setInterval(pollState, POLL_MS);
 
     // ---------------- overlay ----------------
     function draw(m) {
@@ -1645,20 +1671,138 @@ function buildScript() {
       running = true; paused = false; prev = null; still = null; lastFrameT = -1;
       startCalibration(); timer = setInterval(tick, TICK_MS);
       R.startBtn.disabled = true; R.stopBtn.disabled = false; R.pauseBtn.disabled = false; R.manualBtn.disabled = false; R.pauseBtn.textContent = 'Pause';
-      pollState();
+      ctx.poll();
     }
     v.onended = () => { setTimeout(() => { if (running && state !== 'motion') { addLog({ status: 'ignored', text: 'The video has finished. Press Start to play it again.' }); stopAll(); } }, STILL_MS + 1200); };
     R.startBtn.onclick = start;
     R.stopBtn.onclick = stopAll;
     R.pauseBtn.onclick = () => { paused = !paused; R.pauseBtn.textContent = paused ? 'Resume' : 'Pause'; if (paused) setState('paused'); else resetRef(); };
     R.manualBtn.onclick = scoreNow;
-    if (store.get('src', 'camera') === 'camera') listDevices();
+    if (R.src.value === 'camera') listDevices();
     setState('stopped');
     draw();
+
+    return {
+      id: ctx.id,
+      el: unit,
+      renderNow,
+      refresh: renderConn,
+      running: () => running,
+      show(on) { unit.hidden = !on; if (on) requestAnimationFrame(() => draw()); },
+      destroy() { destroyed = true; stopAll(); window.removeEventListener('resize', onResize); unit.remove(); },
+    };
+  }
+
+  // The camera page: a tab per table this device watches, an "Add a table" picker, and one shared poll of the venue.
+  function mount(el, opts) {
+    opts = opts || {};
+    const base = () => String(opts.base || '').trim().replace(/\/+$/, '').replace(/\/(pool-[a-z]+)$/, '');
+    const norm = id => String(id || '').trim().toUpperCase();
+    if (!document.getElementById('cam-view-style')) {
+      const st = document.createElement('style'); st.id = 'cam-view-style'; st.textContent = CSS; document.head.appendChild(st);
+    }
+    el.innerHTML = `
+<div class="cam-view">
+  <div class="cam-top"><h2 class="cam-sign">Table camera</h2>
+    <div class="cam-brand"><a href="#presenter">All screens</a><span>${SHIELD}LOOPOOL</span></div></div>
+  <div class="cam-tabs" role="tablist" aria-label="Tables on this camera page">
+    <span data-r="tabs" style="display:contents"></span>
+    <div class="cam-add" data-r="addRow"><select data-r="addSel" aria-label="Table to add"></select><button class="cam-b" data-r="addBtn" title="Watch another table from this device, for example with a second webcam">Add table</button></div>
+  </div>
+  <div data-r="units" style="display:contents"></div>
+</div>`;
+    const root = el.querySelector('.cam-view');
+    const R = {}; root.querySelectorAll('[data-r]').forEach(n => { R[n.dataset.r] = n; });
+
+    // the venue's tables: from the live state when connected, else from the app (demo), else Tables 1-4
+    let venue = null;
+    const fallback = ['T1', 'T2', 'T3', 'T4'].map((id, i) => ({ id, name: 'Table ' + (i + 1), ref: id === 'T1' }));
+    const known = () => {
+      const live = venue && venue.tables, app = typeof opts.tables === 'function' ? opts.tables() : opts.tables;
+      const list = (live && live.length ? live : app && app.length ? app : fallback).map(t => ({ id: norm(t.id), name: t.name || norm(t.id).replace(/^T(\d+)$/, 'Table $1'), ref: t.ref }));
+      return list;
+    };
+    const info = id => known().find(t => t.id === id);
+    const nameOf = id => (info(id) || {}).name || id.replace(/^T(\d+)$/, 'Table $1');
+    const isRef = id => { const t = info(id); return t && typeof t.ref === 'boolean' ? t.ref : null; };
+
+    const units = new Map(), tabs = new Map();
+    let active = null, destroyed = false;
+    const saveList = () => store.set('tables', [...units.keys()]);
+
+    function select(id) {
+      active = id;
+      units.forEach((u, k) => u.show(k === id));
+      tabs.forEach((b, k) => b.setAttribute('aria-selected', k === id ? 'true' : 'false'));
+      store.set('active', id);
+    }
+    function renderAdd() {
+      const free = known().filter(t => !units.has(t.id));
+      R.addSel.innerHTML = free.map(t => `<option value="${esc(t.id)}">${esc(t.name)}${t.ref === false ? ' (not rated)' : ''}</option>`).join('');
+      R.addRow.style.display = free.length ? '' : 'none';
+    }
+    function refreshAll() {
+      tabs.forEach((b, id) => { b.querySelector('b').textContent = nameOf(id); });
+      units.forEach(u => u.refresh());
+      renderAdd();
+    }
+    function addTable(id, focus) {
+      id = norm(id); if (!id || units.has(id)) { if (focus) select(id); return; }
+      const tab = document.createElement('button');
+      tab.className = 'cam-tab'; tab.type = 'button'; tab.setAttribute('role', 'tab');
+      tab.innerHTML = '<i></i><b></b><small>Stopped</small>';
+      tab.querySelector('b').textContent = nameOf(id);
+      tab.onclick = () => select(id);
+      R.tabs.appendChild(tab); tabs.set(id, tab);
+      const u = createUnit(R.units, {
+        id, base, name: nameOf, isRef,
+        poll: () => pollState(),
+        canRemove: () => units.size > 1,
+        onRemove: () => removeTable(id),
+        onState: (s, label) => { tab.className = 'cam-tab ' + (PILL_CLASS[s] || ''); tab.querySelector('small').textContent = label; },
+      });
+      units.set(id, u); saveList(); refreshAll();
+      if (venue) u.renderNow(venue);
+      if (focus || !active) select(id); else u.show(false);
+    }
+    function removeTable(id) {
+      const u = units.get(id); if (!u || units.size < 2) return;
+      if (u.running() && !confirm(nameOf(id) + ' is still watching. Stop its camera and remove it from this page?')) return;
+      u.destroy(); units.delete(id); tabs.get(id).remove(); tabs.delete(id); saveList();
+      if (active === id) select(units.keys().next().value);
+      refreshAll();
+    }
+    R.addBtn.onclick = () => { if (R.addSel.value) addTable(R.addSel.value, true); };
+
+    // ---------------- one poll of GET {base}/pool?action=state for every table on the page ----------------
+    let pollBusy = false;
+    async function pollState() {
+      if (destroyed || !base() || pollBusy) return;
+      pollBusy = true;
+      try {
+        // name the tables whose camera is running, so the venue referees their games (see camOn in the engine)
+        const cams = [...units.values()].filter(u => u.running()).map(u => u.id).join(',');
+        const r = await fetch(`${base()}/pool?action=state${cams ? '&cams=' + encodeURIComponent(cams) : ''}`, { cache: 'no-store' }); const d = await r.json();
+        if (d && d.ok !== false && d.tables) {
+          const before = JSON.stringify(known());
+          venue = d; units.forEach(u => u.renderNow(d));
+          if (JSON.stringify(known()) !== before) refreshAll();
+        }
+      } catch (e) { /* keep the last picture of the tables */ }
+      pollBusy = false;
+    }
+    const pollTimer = setInterval(pollState, POLL_MS);
+
+    const saved = store.get('tables', null);
+    const start = (Array.isArray(saved) && saved.length ? saved : [opts.table || 'T1']).map(norm).filter(Boolean);
+    [...new Set(start)].forEach(id => addTable(id, false));
+    const want = norm(store.get('active', ''));
+    select(units.has(want) ? want : units.keys().next().value);
     pollState();
 
     return {
-      destroy() { destroyed = true; stopAll(); clearInterval(pollTimer); window.removeEventListener('resize', onResize); el.innerHTML = ''; },
+      addTable: id => addTable(id, true),
+      destroy() { destroyed = true; clearInterval(pollTimer); units.forEach(u => u.destroy()); units.clear(); el.innerHTML = ''; },
     };
   }
 
@@ -1966,7 +2110,7 @@ const PHONE = {
     let lede = 'Join the queue and we\'ll tell you when a table opens.';
     if (ref && ref.game && ref.game.left) lede += ' Table 1 is next in about ' + ref.game.left + ' minute' + (ref.game.left > 1 ? 's' : '') + '.';
     else if (ref && ref.game && ref.game.mode === 'camera') lede += ' Table 1 has a live game on camera.';
-    const rows = st.tables.map((t, i) => `<div class="row"><span class="n${t.ref ? ' ref' : ''}">${i + 1}</span><div style="min-width:0"><b>${t.game || t.status === 'checkin' ? esc(t.champ.name) + ' vs ' + esc(t.challenger ? t.challenger.name : '…') : t.champ ? esc(t.champ.name) + ' needs a challenger' : 'Free'}</b><small>${t.gameType}${t.ref ? ' · camera referee · rated' : ''}</small></div><span class="t">${t.game ? t.game.minutes + ' min' : t.status === 'checkin' ? 'starting' : ''}</span></div>`).join('');
+    const rows = st.tables.map((t, i) => `<div class="row"><span class="n${t.ref ? ' ref' : ''}">${i + 1}</span><div style="min-width:0"><b>${t.game || t.status === 'checkin' ? esc(t.champ.name) + ' vs ' + esc(t.challenger ? t.challenger.name : '…') : t.champ ? esc(t.champ.name) + ' needs a challenger' : 'Free'}</b><small>${t.gameType}${t.ref ? ' · camera referee · rated' : t.camera ? ' · camera referee' : ''}</small></div><span class="t">${t.game ? t.game.minutes + ' min' : t.status === 'checkin' ? 'starting' : ''}</span></div>`).join('');
     return `${topBar(`<a href="${document.body.classList.contains('kiosk') ? '#tv' : '#live'}" style="display:flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:500;text-decoration:none">${ICON.live}Watch Table 1</a>`)}
       <div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">${h1}</h1><p class="lede">${lede}</p></div>
       ${me && me.status === 'left' ? '<p class="lede">You left the queue. Put your name back on any time.</p>' : ''}
@@ -2195,7 +2339,7 @@ function renderVenue(el, st) {
     if (g && g.status === 'review' && g.review) extra = g.review.staff
       ? `<p style="font-size:13.5px">Players disagree on shot ${g.review.shotNo}: ${esc(g.review.foul.text)}.</p><div class="decide"><button class="uphold" data-act="staff" data-t="${t.id}" data-v="uphold">Foul</button><button data-act="staff" data-t="${t.id}" data-v="overrule">No foul</button></div>`
       : `<p class="dim" style="font-size:13.5px">Players are reviewing shot ${g.review.shotNo}.</p>`;
-    const meta = [t.gameType, t.ref ? 'camera referee' : '', g ? (g.minutes ? g.minutes + ' min' : 'just started') : '', g && g.mode === 'camera' && g.shots.length ? 'shot ' + g.shots.length : ''].filter(Boolean).join(' · ');
+    const meta = [t.gameType, t.ref || t.camera ? 'camera referee' : '', g ? (g.minutes ? g.minutes + ' min' : 'just started') : '', g && g.mode === 'camera' && g.shots.length ? 'shot ' + g.shots.length : ''].filter(Boolean).join(' · ');
     return `<div class="tcard${t.status === 'staff' ? ' staff' : ''}"><div class="hd"><span class="sign">${esc(t.name)}</span><span class="st ${cls}">${txt}</span></div><span class="meta">${esc(meta)}</span><div class="felt"></div>${seat(t, 'champ')}${seat(t, 'challenger')}${extra}</div>`;
   }).join('');
   // Red is kept for what staff must act on: a foul the players disagree about, until staff decide it. Everything else is a plain record.
@@ -2236,7 +2380,7 @@ function render() {
   if (v === 'presenter' || v === 'live') renderTV($('#v-' + v + ' [data-tv]'), st, v);
   if (v === 'presenter' || v === 'venue') renderVenue($('#v-' + v + ' [data-venue]'), st);
   if (v === 'venue') renderStaff(st);
-  if (v === 'camera') { const el = $('#v-camera [data-camera]'); if (el && !el.dataset.mounted && window.CameraView) { el.dataset.mounted = '1'; window.CameraView.mount(el, { base: S.mode === 'live' ? S.base : '', table: 'T1' }); } }
+  if (v === 'camera') { const el = $('#v-camera [data-camera]'); if (el && !el.dataset.mounted && window.CameraView) { el.dataset.mounted = '1'; window.CameraView.mount(el, { base: S.mode === 'live' ? S.base : '', table: 'T1', tables: () => ((S.state && S.state.tables) || []).map(t => ({ id: t.id, name: t.name, ref: t.ref })) }); } }
 }
 // ---------- staff tools on the counter tablet (start match, switch turn, foul, undo, next match, winner, group, clear) ----------
 function renderStaff(st) {

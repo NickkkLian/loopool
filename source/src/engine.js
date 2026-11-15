@@ -4,6 +4,11 @@ const RULES = { maxWins: 3, checkinSec: 180, simCheckinSec: 40, simVoteSec: 3, s
 const BALLS = gt => Array.from({ length: gt === '9-ball' ? 9 : gt === '10-ball' ? 10 : 15 }, (_, i) => i + 1);
 const TABLE = { W: 1000, H: 500, R: 11, pockets: [[0, 0], [500, -6], [1000, 0], [0, 500], [500, 506], [1000, 500]] };
 const MIN = 60000;
+// A table has a camera while a camera page is running for it: the page names its tables on every state poll
+// (?cams=T1,T2), so a camera counts as gone once it has not reported for CAM_TTL. Table 1 (t.ref) always has one.
+const CAM_TTL = MIN, CAM_SAVE_EVERY = 20000;
+function camOn(t, now) { return !!t.camAt && now - t.camAt < CAM_TTL; }
+function refereed(t, now) { return !!t.ref || camOn(t, now); }
 function groupOf(b) { b = Number(b); return b === 8 ? 'eight' : b < 8 ? 'solids' : 'stripes'; }
 function otherSide(s) { return s === 'champ' ? 'challenger' : 'champ'; }
 function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -87,7 +92,7 @@ function ratingChange(S, g, W, L, loserLeft) {
 
 function startGame(S, t, now) {
   const real = t.champ.real || t.challenger.real || t.champ.staff || t.challenger.staff;   // staff-started matches are played for real too
-  const mode = t.ref && real ? 'camera' : real ? 'manual' : 'sim';
+  const mode = refereed(t, now) && real ? 'camera' : real ? 'manual' : 'sim';   // any table with a running camera is refereed; only Table 1 is rated
   const id = 'g' + (++S.seq);
   const g = { id, mode, rated: t.ref, startedAt: now, status: 'live' };
   if (mode === 'sim') {
@@ -332,7 +337,7 @@ function publicState(S, now, ticket) {
     if (g) status = g.status === 'review' ? (g.review && g.review.staff ? 'staff' : 'review') : g.status === 'confirm' ? 'confirm' : 'playing';
     else if (t.champ && t.challenger) status = 'checkin';
     else if (t.champ) status = 'waiting';
-    const pub = { id: t.id, name: t.name, ref: t.ref, gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
+    const pub = { id: t.id, name: t.name, ref: t.ref, camera: refereed(t, now), gameType: t.gameType, status, streak: t.streak, champ: seatPub(t.champ, t, 'champ'), challenger: seatPub(t.challenger, t, 'challenger'), lastGame: t.lastGame || null, frameAt: t.frameAt || null, practice: t.practice || null, canUndo: !!(S.undo && S.undo[t.id] && S.undo[t.id].length) };
     if (g) {
       pub.game = { id: g.id, mode: g.mode, rated: g.rated, startedAt: g.startedAt, minutes: Math.max(0, Math.round((now - g.startedAt) / MIN)), left: g.mode === 'sim' ? Math.max(1, Math.round((g.endsAt - now) / MIN)) : null, status: g.status };
       if (g.mode === 'camera') Object.assign(pub.game, { gameType: g.gameType || t.gameType, lastReason: g.lastReason || '', turn: g.turn, groups: g.groups, onTable: g.onTable, positions: g.positions, lastShot: g.lastShot, shots: g.shots.slice(-14), review: g.review, ballInHand: g.ballInHand, winner: g.winner, winReason: g.winReason || '', confirm: g.confirm });
@@ -402,6 +407,12 @@ function handle(S, action, p, realNow) {
   const finBefore = S.finished || 0;
   if (p.base) S.base = String(p.base).slice(0, 200);
   if (p.k != null && p.k !== '') { const kq = p.ticket ? findTicket(S, p.ticket) : null; if (!kq || !kq.key || kq.key !== String(p.k)) return fail('This link doesn\'t match a ticket.', 403); }
+  if (p.cams) {                                          // a camera page says which tables it is watching (before settle, so a game starting now is refereed)
+    String(p.cams).toUpperCase().split(',').slice(0, 20).forEach(id => {
+      const t = S.tables.find(x => x.id === id.trim());
+      if (t && !(t.camAt && now() - t.camAt < CAM_SAVE_EVERY)) t.camAt = now();   // saved at most every 20 s per table
+    });
+  }
   settle(S, now(), notes);
   const q = p.ticket ? findTicket(S, p.ticket) : null;
   switch (action) {
@@ -455,7 +466,8 @@ function handle(S, action, p, realNow) {
       const t = S.tables.find(x => x.id === String(p.table || 'T1').toUpperCase());
       let sh = p.shot; if (typeof sh === 'string') { try { sh = JSON.parse(sh); } catch (e) { sh = null; } }
       if (!t) return fail('Unknown table.');
-      if (p.hasFrame) t.frameAt = now();                 // the new photo shows on the TV even if the AI reading failed
+      t.camAt = now();                                   // a shot from this table's camera: it is watching
+      if (p.hasFrame) t.frameAt = now();                // the new photo shows on the TV even if the AI reading failed
       if (!sh || sh.ok === false) { const r = fail((sh && sh.error) || 'The AI could not read this shot.'); r.response = Object.assign(publicState(S, now(), p.ticket), { ok: false, error: (sh && sh.error) || 'The AI could not read this shot.' }); return r; }
       const g = t.game;
       if (g && g.mode === 'camera' && g.status === 'review') return fail('Waiting for the foul review on shot ' + g.review.shotNo + '.', 409);
@@ -574,7 +586,7 @@ function handle(S, action, p, realNow) {
         settle(S, now(), notes);
         break;
       }
-      if (!live) return fail(!g ? 'No game is being played on ' + t.name + '.' : g.mode !== 'camera' ? (t.ref ? 'The camera is not following this game on ' + t.name : t.name + ' has no camera') + ', so staff can only declare the winner or clear the table.' : g.status === 'review' ? 'Play on ' + t.name + ' is paused for a foul review. Decide the review first.' : 'The game on ' + t.name + ' is over. The players are confirming the result.');
+      if (!live) return fail(!g ? 'No game is being played on ' + t.name + '.' : g.mode !== 'camera' ? (refereed(t, now()) ? 'The camera is not following this game on ' + t.name : t.name + ' has no camera') + ', so staff can only declare the winner or clear the table.' : g.status === 'review' ? 'Play on ' + t.name + ' is paused for a foul review. Decide the review first.' : 'The game on ' + t.name + ' is over. The players are confirming the result.');
       pushUndo(S, t);
       if (action === 'switch_turn') { g.turn = otherSide(g.turn); g.ballInHand = false; g.lastReason = 'Turn switched by staff: ' + t[g.turn].name + ' to shoot'; log(S, now(), 'table', t.name + ' · ' + g.lastReason); }
       else if (action === 'foul') { g.turn = otherSide(g.turn); g.ballInHand = true; g.lastReason = 'Foul called by staff: ball in hand for ' + t[g.turn].name; log(S, now(), 'foul', t.name + ' · ' + g.lastReason); }
