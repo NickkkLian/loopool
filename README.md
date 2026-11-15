@@ -9,8 +9,7 @@
 In most bars the pool queue is coins on the rail or a name on a chalkboard, and arguments about who hit what are settled by whoever is loudest. Loopool replaces both:
 
 - **A fair queue.** Players scan the QR code on the bar TV, put their name on the board from their phone and get an email when their table is free. They check in with one tap. Winner stays on, up to 3 wins in a row while others wait.
-- **An AI referee.** A phone or webcam above the table sends photos of each shot to n8n once the balls stop. An AI vision model says which balls went in, which ball was hit first and whether the cue ball dropped. Code turns that into a 0-100 shot score with a tip and applies the rules: turns, solids and stripes, fouls, ball in hand, the winner and the players' ratings.
-- **People keep the last word.** When the AI is unsure about a foul, play pauses and both players vote on their phones; if they disagree, staff decide. Staff can switch the turn, call a foul, set groups or undo the last change from the counter tablet.
+- **An AI referee.** A phone or webcam above the table sends photos of each shot to n8n once the balls stop. An AI vision model says which balls went in, which ball was hit first and whether the cue ball dropped. Code turns that into a 0-100 shot score with a tip and applies the rules: turns, solids and stripes, fouls, ball in hand, the winner and the players' ratings. If the AI is unsure about a foul, play pauses and the players confirm on their phones; staff can correct any call from the counter tablet.
 - **For the bar.** A TV screen with the live game, the photo and the AI's call after each shot and tonight's ratings, plus "Ask the referee": an AI that answers rules and queue questions from the house rules and the live board.
 
 ## Screens
