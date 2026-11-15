@@ -232,6 +232,9 @@ Reply with ONLY this JSON, no other text:
   "tip": string,
   "confidence": number
 }
+How to rate the shot (choose the option that fits; "medium" and "ok_position" are not defaults):
+- "difficulty": "easy" = the object ball is within about a quarter of the table length of its pocket AND the cut is nearly straight (cue ball, object ball and pocket close to one line). "hard" = any of: the object ball travels more than half the table length to the pocket; a thin cut (the cue ball meets it more than about 45 degrees off straight); a bank or kick; or the cue ball has to pass close to other balls. "medium" = everything else.
+- "cue_ball_outcome": look at where the cue ball stopped in the LAST frame. "good_position" = BOTH: it is within about a quarter of the table length of a ball the same player could pot next with nothing in the way, AND that ball has a clear, nearly straight line into a pocket. "bad_position" = it is touching or almost touching a cushion, or another ball blocks the line to every ball the player could play next, or every such ball is more than half the table away. "ok_position" = only when neither fits. "scratch" = the cue ball went in a pocket.
 Name each potted ball as "solid N", "stripe N", "8 ball" or "cue ball" (use "solid ?" / "stripe ?" + colour if the number is unreadable). "cue_ball_after" is where the cue ball is in the LAST frame, or "not visible". Keep "observations" to one or two plain sentences a player would understand.`;
   const keys = frames.map(f => f.key).concat(hasDiff ? ['frame_diff'] : []);
   return [{ json: { table: tableId, game_type: gameType, prompt, imageKeys: keys.join(','), frame_count: frames.length, has_frames: true, base, frame }, binary: bin }];
