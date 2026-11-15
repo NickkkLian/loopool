@@ -1250,6 +1250,7 @@ function buildScript() {
   const TICK_MS = 125;            // detection tick
   const SMALL_W = 240;            // width of the grayscale frame used for motion
   const CALIB_MS = 2500;          // calibration window
+  const SETTLE_MS = 750;          // the first part of it is ignored
   const STILL_MS = 1500, MOVED_MIN = 0.0005, MAX_SHOT_MS = 30000;
   const MID_EVERY_MS = 350;       // mid-shot frame grab interval
   const FRAME_LONG_SIDE = 1024;   // long side of every frame sent to the AI (his page: 1568)
@@ -1407,8 +1408,11 @@ function buildScript() {
     R.dev.onchange = () => { wantDev = R.dev.value; store.set('dev', wantDev); };
 
     // ---------------- video + geometry ----------------
-    // the camera is mounted once, looking straight down, and watches the whole picture at one fixed sensitivity
-    const SENS = 1;
+    // the camera is mounted once, looking straight down, and watches the whole picture with fixed levels: a shot starts when
+    // more than 0.3% of the picture changes between two looks and ends after 1.5 s below 0.1%. Fixed levels caught 169 of 193
+    // hand-labelled shots (10 overhead videos and the demo clip) with 7 false ones; levels scaled to the measured background
+    // movement caught at most 126 and none on the demo clip (vision/camera_threshold_sweep.py, camera_sens_sweep.py).
+    const START_LEVEL = 0.003, END_LEVEL = 0.001;
     function srcRect() { return [0, 0, v.videoWidth, v.videoHeight]; }
     const sc = document.createElement('canvas'), sctx = sc.getContext('2d', { willReadFrequently: true });
     function smallGray() {
@@ -1452,10 +1456,10 @@ function buildScript() {
       const t = performance.now(), g = smallGray();
       const m = diffFrac(g, prev, 18); prev = g; lastM = m;
       if (calib) {
-        calib.samples.push(m);
+        if (t - calib.start > SETTLE_MS) calib.samples.push(m);   // skip the start: a camera adjusting its exposure or a video's first frames are not table noise
         if (t - calib.start > CALIB_MS) {
-          const s = calib.samples.slice(2).sort((a, b) => a - b), p95 = s[Math.floor(s.length * 0.95)] || 0, sens = SENS;
-          OFF = Math.max(0.0002, p95 * 2) / sens; ON = Math.max(0.0005, p95 * 6) / sens;   // low floor: a single rolling ball must trigger
+          const s = calib.samples.slice().sort((a, b) => a - b), p95 = s[Math.floor(s.length * 0.95)] || 0;
+          OFF = END_LEVEL; ON = START_LEVEL;   // p95 is only shown in the hint below
           calib = null; still = { canvas: captureFull(), small: g, at: t }; setState('idle');
           R.hint.className = 'cam-hint';
           R.hint.textContent = 'Ready. Watching the table for shots.';

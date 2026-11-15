@@ -46,7 +46,7 @@ email buttons      ──► /pool-act   (check in, vote on a foul, confirm a re
 "Ask the referee"  ──► /pool-ask   (AI agent with the house rules and the live board)
 ```
 
-The whole backend is one workflow (`pool-referee.n8n.json`, 46 nodes) that also serves the app. The camera page detects shots in the browser (frame differencing with a noise calibration), so n8n only receives the shots that matter. The AI only describes what it sees; the score and every rule are plain code, so the same shot always gets the same ruling. State is kept in the workflow's static data, which n8n saves when a run ends, so anything slow runs apart from the state: the 15-second AI call hands its result to a short `/pool-apply` run, and emails go out from a background sub-run.
+The whole backend is one workflow (`pool-referee.n8n.json`, 46 nodes) that also serves the app. The camera page detects shots in the browser (frame differencing with fixed start and end levels, chosen by replaying labelled pool videos through it), so n8n only receives the shots that matter. The AI only describes what it sees; the score and every rule are plain code, so the same shot always gets the same ruling. State is kept in the workflow's static data, which n8n saves when a run ends, so anything slow runs apart from the state: the 15-second AI call hands its result to a short `/pool-apply` run, and emails go out from a background sub-run.
 
 ## How we chose the AI model
 
@@ -71,7 +71,7 @@ Models tested: Claude Haiku 5.5, Claude Sonnet 5.5, GPT-6 Luna, GPT-6.1 Terra, G
 
 1. Mount a phone or webcam above the table, looking straight down, with the table filling the picture. Open `#camera` (the page is served over https, so phones allow the camera).
 2. Pick the table's **ball colours** (the usual set, or a set where the 4 is pink, the 5 purple and the 7 orange). In our test this one setting made the calls clearly more accurate.
-3. Press **Start** and keep the table still for 3 seconds while it measures camera noise. The camera watches the whole picture, so mount it once with the table filling the frame.
+3. Press **Start** and keep the table still for 3 seconds while it gets ready. The camera watches the whole picture, so mount it once with the table filling the frame.
 4. Play. A shot is sent once the balls have been still for 1.5 seconds; someone leaning over the table without moving a ball is ignored.
 
 For a demo without a table, choose **A recorded video (for demos)** under **Picture from**, and the page treats the video as a live feed.
@@ -92,7 +92,7 @@ For a demo without a table, choose **A recorded video (for demos)** under **Pict
 
 - The AI reads still photos, so very fast or hidden moments can be missed; that is why unsure fouls go to a player vote and staff can undo any call.
 - Our test footage has almost no fouls, so the test shows the AI rarely calls a foul that did not happen, not how well it catches real ones.
-- The camera page decides when a shot starts and ends from how much of the picture changes. It works on a calm table, but when arms and cues are over the table most of the time (as in the drill videos we tested with), it can miss shots; **Send a missed shot** on the camera page covers that.
+- The camera page decides when a shot starts and ends from how much of the picture changes. It can still miss a shot, or join two shots into one, when arms and cues stay over the table between shots; **Send a missed shot** on the camera page covers that.
 - Two requests that land within about a tenth of a second of each other can still overwrite each other's change (a limit of workflow static data).
 - State lives in the workflow's static data: right for one venue. For more traffic, move it to Postgres or n8n Data Tables (the engine code stays the same).
 
@@ -113,7 +113,6 @@ For a demo without a table, choose **A recorded video (for demos)** under **Pict
 Loopool was built by Nick Lian, Nic Saunders, Ava Soh and Ibrahim Tekkanat at the UBC eProjects × n8n LOOP Hackathon, November 2026.
 
 ## Built with, and outside services
-
 
 - **n8n Cloud**: webhooks, Code, Switch, Execute Workflow, Respond to Webhook, the AI Agent node, Anthropic image analysis, Gmail; state in workflow static data.
 - **AI models**, through n8n's built-in AI credits: Claude Haiku 5.5 (Anthropic) reads the shots and answers "Ask the referee". For the accuracy test we also ran Claude Sonnet 5.5 (Anthropic), GPT-6 Luna and GPT-6.1 Terra (OpenAI), Gemini 3.1 Flash-Lite (Google) and Qwen3-VL Plus (Alibaba Cloud).
