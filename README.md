@@ -52,7 +52,7 @@ The whole backend is one workflow (`pool-referee.n8n.json`, 56 nodes) that also 
 ## How we chose the AI model
 
 <!-- accuracy:start -->
-We didn't want to guess which vision model should referee, so we built a test inside n8n: 184 real shots cut from 10 public overhead pool videos, each labelled frame by frame, sent to 6 vision models through a second n8n workflow on n8n's AI credits, and scored exactly the way the live referee reads an answer.
+We didn't want to guess which vision model should referee, so we built a test inside n8n: 184 real shots cut from 10 public overhead pool videos, each labelled frame by frame, sent through a second n8n workflow on n8n's AI credits and scored exactly the way the live referee reads an answer. The two cheapest models ran on all 184 shots; all 6 vision models were compared on a shared set of 16.
 
 - **Claude Haiku 5.5 came out as the most cost-effective:** at least as accurate as models up to ten times its price, at about 0.2¢ a shot.
 - **Seeing that a ball dropped is the easy part; naming it is the hard part.** From above a ball is about 20 pixels wide, so the models go by colour.
