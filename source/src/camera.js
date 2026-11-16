@@ -191,9 +191,8 @@
 
     // ---------------- video + geometry ----------------
     // the camera is mounted once, looking straight down, and watches the whole picture with fixed levels: a shot starts when
-    // more than 0.3% of the picture changes between two looks and ends after 1.5 s below 0.1%. Fixed levels caught 169 of 193
-    // hand-labelled shots (10 overhead videos and the demo clip) with 7 false ones; levels scaled to the measured background
-    // movement caught at most 126 and none on the demo clip (vision/camera_threshold_sweep.py, camera_sens_sweep.py).
+    // more than 0.3% of the picture changes between two looks and ends after 1.5 s below 0.1%. On hand-labelled overhead
+    // videos these fixed levels caught far more shots than levels scaled to the measured background movement.
     const START_LEVEL = 0.003, END_LEVEL = 0.001;
     function srcRect() { return [0, 0, v.videoWidth, v.videoHeight]; }
     const sc = document.createElement('canvas'), sctx = sc.getContext('2d', { willReadFrequently: true });

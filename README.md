@@ -105,8 +105,6 @@ For a demo without a table, choose **A recorded video (for demos)** under **Pict
 | `index.html` | The same app in one file, on demo data, for any browser. |
 | `source/` | App and workflow sources. `node source/build.js` rebuilds `index.html` and `pool-referee.n8n.json`. |
 | `API.md` | Endpoints, actions, the `/pool-score` format and the rules. |
-| `prototype/` | The first prototype: workflow, camera page, display page and API notes. |
-| `experiments/opencv-referee/` | An earlier referee built with classic computer vision (OpenCV), with its results on real footage. |
 | `screenshots/` | The screens. |
 
 ## Team
@@ -118,6 +116,6 @@ Loopool was built by Nick Lian, Nic Saunders, Ava Soh and Ibrahim Tekkanat at th
 - **n8n Cloud**: webhooks, Code, Switch, Execute Workflow, Respond to Webhook, the AI Agent node, Anthropic image analysis, Gmail; state in workflow static data.
 - **AI models**, through n8n's built-in AI credits: Claude Haiku 5.5 (Anthropic) reads the shots and answers "Ask the referee". For the accuracy test we also ran Claude Sonnet 5.5 (Anthropic), GPT-6 Luna and GPT-6.1 Terra (OpenAI), Gemini 3.1 Flash-Lite (Google) and Qwen3-VL Plus (Alibaba Cloud).
 - **Gmail** for the queue emails, **Google Fonts** (Big Shoulders, Gochi Hand, Instrument Sans, IBM Plex Mono), **qrcodejs** from cdnjs for the QR code.
-- **Test footage**: public YouTube videos from The Billiard Room by Jason Creglia and Misha's Billiards, used to test the referee. A few still frames appear in the screenshots; the videos themselves are not included here.
-- **OpenCV** for the earlier computer-vision experiment.
+- **Test footage**: public YouTube videos used to test the referee, "Pool Drill 8 - Overhead View" and other drills from The Billiard Room by Jason Creglia, and "8 Ball Lesson - GoPro top view runout breakdown" from Misha's Billiards. A few still frames appear in the screenshots; the videos themselves are not included here.
+- **OpenCV** (Python) for an earlier computer-vision referee and for cutting test shots from the footage; neither is part of this version.
 - AI coding assistants helped write and test the code.

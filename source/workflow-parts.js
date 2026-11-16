@@ -178,7 +178,7 @@ async function prepareShot() {
   const pool = store.pool, t = pool && pool.tables ? pool.tables.find(x => x.id === tableId) : null;
   const gameType = String(body.game_type || (t && t.game && t.game.gameType) || (t && t.gameType) || '8-ball');
   // The table's ball colours, picked on the camera page. Naming balls by colour is where the AI goes wrong most
-  // (reports/accuracy-and-cost.html), so the prompt says which colour is which number on this table.
+  // (our model test), so the prompt says which colour is which number on this table.
   const BALL_SETS = {
     standard: 'Ball colours on this table: 1 yellow, 2 blue, 3 red, 4 purple, 5 orange, 6 green, 7 maroon, 8 black; 9-15 are the same colours with a white band (9 yellow, 10 blue, 11 red, 12 purple, 13 orange, 14 green, 15 maroon). The cue ball is plain white.',
     pink: 'Ball colours on this table (not the usual set): 1 yellow, 2 blue, 3 red, 4 pink (can look dark red or maroon), 5 purple, 6 green, 7 orange, 8 black; 9-15 are the same colours with a white band (9 yellow, 10 blue, 11 red, 12 pink, 13 purple, 14 green, 15 orange). The cue ball is cream with a small red dot.',

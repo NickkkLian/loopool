@@ -66,7 +66,7 @@ Every reply also carries `events[]`: upcoming events with `count` and `names` of
 | `reset_table` | | clears the table; the queue is called |
 | `staff` | `decision=uphold\|overrule` | decides a disputed foul review |
 
-**Camera service (event form)**: `shot` with `table`, `event={potted:[n], firstContact:n|'unknown', cueBallPotted, confidence:{firstContact}, positions?}` (used by the OpenCV experiment and the demo recorder).
+**Camera service (event form)**: `shot` with `table`, `event={potted:[n], firstContact:n|'unknown', cueBallPotted, confidence:{firstContact}, positions?}` (used by the demo recorder).
 
 ## `/pool-score`
 

@@ -450,7 +450,7 @@ function seedDirectory(now) {
   return [
     { id: 'b_cue', name: 'The Cue Club', address: '1001 Granville St, Vancouver', about: 'Nine 9-ft Diamond tables and a weekly 9-ball league.', hours: H('12:00', '01:00', '02:00'), tableCount: 9, tableBrand: 'Diamond', tableSize: '9 ft', cues: 30, example: true, lat: 49.2786, lng: -123.1253,
       events: [{ id: 'x1', title: 'Thursday 9-ball league', kind: 'league', date: day(3), time: '19:30', gameType: '9-ball', fee: '$15', count: 11, cap: 24 }] },
-    { id: 'b_rack', name: 'Bank Shot Bar', address: '2150 Commercial Dr, Vancouver', about: 'Neighbourhood bar with three tables and a friendly beginners night.', hours: H('16:00', '00:00', '01:00'), tableCount: 3, tableBrand: 'Valley', tableSize: '7 ft', cues: 10, example: true, lat: 49.2658, lng: -123.0697,
+    { id: 'b_bank', name: 'Bank Shot Bar', address: '2150 Commercial Dr, Vancouver', about: 'Neighbourhood bar with three tables and a friendly beginners night.', hours: H('16:00', '00:00', '01:00'), tableCount: 3, tableBrand: 'Valley', tableSize: '7 ft', cues: 10, example: true, lat: 49.2658, lng: -123.0697,
       events: [{ id: 'x2', title: 'Beginners night', kind: 'lesson', date: day(1), time: '18:00', gameType: '8-ball', fee: 'Free', count: 5, cap: 0 }] },
     { id: 'b_side', name: 'Side Pocket Lounge', address: '480 Main St, Vancouver', about: 'Late-night pool and a monthly 8-ball tournament.', hours: H('17:00', '02:00'), tableCount: 6, tableBrand: 'Brunswick', tableSize: '8 ft', cues: 18, example: true, lat: 49.2799, lng: -123.1003, events: [] },
   ];
