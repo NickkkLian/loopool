@@ -6,6 +6,8 @@
 
 **Try it:** [the demo version](https://nickkklian.github.io/loopool/) runs all four screens in your browser on made-up data (no n8n needed).
 
+**Overall Second Place** at the [UBC eProjects × n8n LOOP Hackathon](https://loop.devpost.com/), Vancouver, November 2026 ([about the hackathon](#the-hackathon)).
+
 In most bars the pool queue is coins on the rail or a name on a chalkboard, and arguments about who hit what are settled by whoever is loudest. Loopool replaces both:
 
 - **A fair queue.** Players scan the QR code on the bar TV, put their name on the board from their phone and get an email when their table is free. They check in with one tap. Winner stays on, up to 3 wins in a row while others wait.
@@ -106,6 +108,21 @@ For a demo without a table, choose **A recorded video (for demos)** under **Pict
 | `source/` | App and workflow sources. `node source/build.js` rebuilds `index.html` and `pool-referee.n8n.json`. |
 | `API.md` | Endpoints, actions, the `/pool-score` format and the rules. |
 | `screenshots/` | The screens. |
+| `hackathon/` | The award certificate. |
+
+## The hackathon
+
+![LOOP 2026 award: Overall Second Place, CAD $200 team cash prize, awarded to Loopool](hackathon/award-overall-second-place.jpg)
+
+- **Event:** UBC eProjects × n8n LOOP Hackathon, a two-day build event run by UBC eProjects, powered by n8n and Nebius, with an Investly sponsor track. Theme: use n8n and AI to make work, learning or community systems more useful, human and reliable.
+- **When and where:** November 14-15, 2026, UBC LIFE Building, Vancouver. About 27 hours of building, teams of 1 to 4.
+- **Result:** Loopool won **Overall Second Place** (CAD $200 team cash prize), announced at the closing ceremony on November 15.
+- **Links:**
+  - Hackathon page: https://loop.devpost.com/ (rules: https://loop.devpost.com/rules, all projects: https://loop.devpost.com/project-gallery)
+  - Our submission: https://devpost.com/software/loopool
+  - Demo video: https://youtu.be/OconluBigy8
+  - Organiser: UBC eProjects, https://www.instagram.com/eprojectsubc/
+  - Lead sponsor: n8n, https://n8n.io/ (the docs and courses we learned from: https://docs.n8n.io/)
 
 ## Team
 
