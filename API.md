@@ -7,7 +7,7 @@ All JSON replies allow any origin (`Access-Control-Allow-Origin: *`). Always cal
 |---|---|---|---|
 | `/pool-app` | GET | People | The whole app (phone, bar TV, counter tablet, camera). Views by hash: `#mobile`, `#tv`, `#venue`, `#camera`, `#presenter` (all screens + demo buttons). |
 | `/pool?action=…` | GET | App, camera service, staff | Queue, game rules, staff tools. Returns the full public state. |
-| `/pool-score` | POST multipart | Camera screen | Shot photos in; AI reading + 0-100 score + game result out. Same format as the first prototype. |
+| `/pool-score` | POST multipart | Camera screen | Shot photos in; AI reading + 0-100 score + game result out. |
 | `/pool-apply` | POST JSON | The workflow itself | Applies a scored shot to the game in a short run of its own (see below). Not for clients. |
 | `/pool-frame?table=T1` | GET | TV, phones | The latest after-shot photo of a table (JPEG). |
 | `/pool-act?a=…&t=…&k=…` | GET | Email buttons | Check in, vote on a foul, confirm a result or leave, from a player's email (keyed per ticket). |
